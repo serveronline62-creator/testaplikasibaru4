@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>RT Kita · Manajemen Rukun Tetangga</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
-    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
@@ -147,7 +146,6 @@
         .section-title .btn-tambah-anggota:hover { background: #1c5f4e; }
         .section-title .loading-text { font-size: 0.8rem; color: #6a7e94; }
 
-        /* 🆕 TOMBOL EXPORT PDF UNTUK TAMU */
         .section-title .btn-export-tamu {
             background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
             border: none; color: white; padding: 0.4rem 1.2rem;
@@ -157,12 +155,9 @@
         }
         .section-title .btn-export-tamu:hover {
             background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
-            transform: translateY(-1px);
-            box-shadow: 0 6px 14px rgba(231,76,60,0.5);
+            transform: translateY(-1px); box-shadow: 0 6px 14px rgba(231,76,60,0.5);
         }
-        .section-title .btn-export-tamu:disabled {
-            opacity: 0.6; cursor: not-allowed; transform: none;
-        }
+        .section-title .btn-export-tamu:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
         .table-responsive {
             overflow-x: auto; background: white; border-radius: 20px;
@@ -361,7 +356,7 @@
         .kk-footer, .tamu-detail-footer {
             margin-top: 0.8rem; display: flex; justify-content: flex-end; gap: 1.5rem;
             font-size: 0.8rem; color: #1c5f4e; font-weight: 500;
-            border-top: 1px solid #dde3ed; padding-top: 0.8rem;
+            border-top: 1px solid #dde3ed; padding-top: 0.8rem; flex-wrap: wrap;
         }
         .kk-footer span, .tamu-detail-footer span {
             cursor: pointer; transition: 0.1s;
@@ -508,7 +503,7 @@
             border-radius: 40px; font-size: 0.7rem; font-weight: 600;
         }
 
-        /* ================= WHATSAPP LINK STYLING ================= */
+        /* ===== WHATSAPP LINK ===== */
         a.wa-link { color: #25D366; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; transition: 0.15s; }
         a.wa-link:hover { color: #128C7E; text-decoration: underline; }
         a.wa-link i.fab.fa-whatsapp { font-size: 0.95em; }
@@ -527,6 +522,15 @@
             transition: 0.15s; box-shadow: 0 2px 6px rgba(37, 211, 102, 0.3);
         }
         a.wa-badge:hover { background: #128C7E; transform: translateY(-1px); box-shadow: 0 4px 10px rgba(37, 211, 102, 0.45); color: white; }
+
+        /* ===== TOMBOL DOWNLOAD PDF PER TAMU ===== */
+        #btnTamuDownloadPDF {
+            color: #e74c3c; cursor: pointer;
+            display: inline-flex; align-items: center; gap: 4px;
+            transition: 0.15s; font-weight: 600;
+        }
+        #btnTamuDownloadPDF:hover { color: #c0392b; text-decoration: underline; }
+        #btnTamuDownloadPDF.loading { opacity: 0.6; pointer-events: none; }
     </style>
 </head>
 <body class="not-logged-in">
@@ -654,13 +658,12 @@
         </div>
     </div>
 
-    <!-- 🆕 PANEL TAMU dengan tombol Download PDF -->
+    <!-- PANEL TAMU -->
     <div id="tab-tamu" class="panel">
         <div class="section-title">
             <span><span class="icon-tamu"><i class="fas fa-user"></i></span> Tamu Wajib Lapor</span>
             <div style="display:flex;gap:6px;flex-wrap:wrap;">
                 <span class="loading-text" id="loadingTamu"></span>
-                <!-- 🆕 TOMBOL DOWNLOAD PDF TAMU -->
                 <button class="btn-export-tamu" id="btnExportTamuPDF" title="Download data tamu sebagai PDF">
                     <i class="fas fa-file-pdf"></i> Download PDF
                 </button>
@@ -986,6 +989,7 @@
         </div>
         <div id="tamuDetailContent"></div>
         <div class="tamu-detail-footer">
+            <span id="btnTamuDownloadPDF"><i class="fas fa-file-pdf"></i> Download PDF</span>
             <span id="btnTamuCopyText"><i class="fas fa-copy"></i> Copy data tamu</span>
             <span id="btnTamuEdit"><i class="fas fa-edit"></i> Edit</span>
             <span id="btnTamuHapus" style="color:#e74c3c;"><i class="fas fa-trash"></i> Hapus</span>
@@ -1203,9 +1207,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // ======================================================================
-    // FIREBASE AUTHENTICATION
-    // ======================================================================
     const auth = firebase.auth();
     const USERNAME_DOMAIN = '@rtkita.app';
 
@@ -1266,13 +1267,10 @@
         const errBox = document.getElementById('loginError');
         const email = usernameToEmail(document.getElementById('loginUsername').value);
         const pass = document.getElementById('loginPassword').value;
-
         errBox.textContent = '';
         if (!email || !pass) { errBox.textContent = 'Username dan password wajib diisi.'; return; }
-
         btn.disabled = true;
         btn.innerHTML = '<span class="loading-spinner"></span> Memproses...';
-
         try { await auth.signInWithEmailAndPassword(email, pass); }
         catch (err) { console.error('Login error:', err); errBox.textContent = translateAuthError(err); resetLoginButton(); }
     });
@@ -1318,9 +1316,7 @@
         return new Promise((resolve, reject) => {
             const xhr = new XMLHttpRequest();
             xhr.upload.addEventListener('progress', function(e) {
-                if (e.lengthComputable && onProgress) {
-                    onProgress(Math.round((e.loaded / e.total) * 100));
-                }
+                if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100));
             });
             xhr.onload = function() {
                 if (xhr.status === 200) {
@@ -1410,7 +1406,7 @@
 
             setLoading('loadingSettings', '<span class="loading-spinner"></span> Memuat...');
             const settingsDoc = await settingsRef.get();
-            if (settingsDoc.exists) { settingsData = settingsDoc.data(); }
+            if (settingsDoc.exists) settingsData = settingsDoc.data();
             setLoading('loadingSettings', '');
 
             updateKeluargaDropdown();
@@ -1574,12 +1570,10 @@
                 const uploadBtnClass = hasFile ? 'btn-upload uploaded' : 'btn-upload';
                 const uploadIcon = hasFile ? 'fa-check-circle' : 'fa-upload';
                 const uploadText = hasFile ? 'Tersimpan' : 'Upload';
-
                 let viewBtn = '';
                 if (hasFile) {
                     viewBtn = `<button class="btn-file-view" data-file-url="${k.fileUrl}" data-file-name="${k.fileName || 'Dokumen'}" data-file-type="${k.fileType || 'Dokumen'}" data-file-size="${k.fileSize || 0}" data-file-time="${k.fileTime || ''}" data-owner="${k.kepala}"><i class="fas fa-eye"></i></button>`;
                 }
-
                 return `
                     <tr>
                         <td class="no-urut">${index + 1}</td>
@@ -1648,18 +1642,15 @@
                 const uploadIcon = hasFile ? 'fa-check-circle' : 'fa-upload';
                 const uploadText = hasFile ? 'Tersimpan' : 'Upload';
                 const cls = t.status === 'Sudah Lapor' ? 'tamu-status-badge sudah-lapor' : 'tamu-status-badge belum-lapor';
-
                 let viewBtn = '';
                 if (hasFile) {
                     viewBtn = `<button class="btn-file-view" data-file-url="${t.fileUrl}" data-file-name="${t.fileName || 'Dokumen'}" data-file-type="${t.fileType || 'Dokumen'}" data-file-size="${t.fileSize || 0}" data-file-time="${t.fileTime || ''}" data-owner="${t.nama}"><i class="fas fa-eye"></i></button>`;
                 }
-
                 const kontak = t.kontak || t.noTelp || '-';
                 const waLink = kontak !== '-' ? getWhatsAppLink(kontak, t.nama) : null;
                 const kontakHtml = (kontak !== '-' && waLink)
                     ? `<a href="${waLink}" target="_blank" rel="noopener" class="tamu-kontak-info" title="Chat WhatsApp ${kontak}"><i class="fab fa-whatsapp" style="color:#25D366;"></i> ${kontak}</a>`
                     : (kontak !== '-' ? `<span class="tamu-kontak-info"><i class="fas fa-phone"></i> ${kontak}</span>` : '-');
-
                 return `
                     <tr>
                         <td class="no-urut">${t.no || index + 1}</td>
@@ -2042,6 +2033,159 @@
     }
 
     // ======================================================================
+    // DOWNLOAD PDF DETAIL PER TAMU
+    // ======================================================================
+    document.getElementById('btnTamuDownloadPDF').addEventListener('click', function() {
+        const t = tamuWajibLapor[currentTamuIndex];
+        if (!t) { alert('Data tamu tidak ditemukan'); return; }
+
+        const btn = this;
+        btn.classList.add('loading');
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+
+        const pdfContainer = document.createElement('div');
+        pdfContainer.style.cssText = 'padding:24px;background:white;font-family:"Segoe UI",Arial,sans-serif;width:100%;max-width:800px;';
+
+        const kontak = t.kontak || t.noTelp || '-';
+        const isSudahLapor = t.status === 'Sudah Lapor';
+        const statusColor = isSudahLapor ? '#155724' : '#721c24';
+        const statusBg = isSudahLapor ? '#d4edda' : '#f8d7da';
+
+        const tanggalCetak = new Date().toLocaleDateString('id-ID', {
+            day: 'numeric', month: 'long', year: 'numeric'
+        });
+        const waktuCetak = new Date().toLocaleTimeString('id-ID', {
+            hour: '2-digit', minute: '2-digit'
+        });
+
+        let fileInfoHtml = '';
+        if (t.fileUrl) {
+            const isImage = t.fileUrl.match(/\.(jpeg|jpg|png|gif|webp)$/i);
+            fileInfoHtml = `
+                <div style="margin-top:16px;padding:12px 16px;background:#f8faff;border:1px solid #dde3ed;border-radius:10px;">
+                    <div style="font-size:10px;font-weight:700;color:#0b2b3d;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">
+                        📎 Dokumen Pendukung
+                    </div>
+                    <div style="display:flex;align-items:center;gap:12px;">
+                        ${isImage
+                            ? `<img src="${t.fileUrl}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid #dde3ed;" />`
+                            : `<div style="width:60px;height:60px;background:#fdecea;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#e74c3c;font-size:24px;">📄</div>`
+                        }
+                        <div style="flex:1;">
+                            <div style="font-weight:600;color:#0b2b3d;font-size:11px;">
+                                ${t.fileType || 'Dokumen'}: ${t.fileName || 'File'}
+                            </div>
+                            ${t.fileSize ? `<div style="font-size:9.5px;color:#6a7e94;margin-top:2px;">Ukuran: ${formatFileSize(t.fileSize)}</div>` : ''}
+                            ${t.fileTime ? `<div style="font-size:9.5px;color:#6a7e94;">Upload: ${formatDateTime(t.fileTime)}</div>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        pdfContainer.innerHTML = `
+            <div style="border-bottom:3px solid #a1581c;padding-bottom:14px;margin-bottom:20px;">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                    <div style="display:flex;align-items:center;gap:14px;">
+                        <div style="width:56px;height:56px;background:linear-gradient(135deg,#a1581c 0%,#7a4213 100%);border-radius:14px;display:flex;align-items:center;justify-content:center;color:white;font-size:26px;">👤</div>
+                        <div>
+                            <div style="font-size:10.5px;color:#6a7e94;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;">
+                                ${settingsData.namaRT || 'RT 08 · Kelurahan Makmur'}
+                            </div>
+                            <div style="font-size:19px;font-weight:700;color:#0b2b3d;margin-top:3px;">DETAIL TAMU WAJIB LAPOR</div>
+                            <div style="font-size:10px;color:#6a7e94;margin-top:2px;">Laporan lengkap data tamu wajib lapor</div>
+                        </div>
+                    </div>
+                    <div style="text-align:right;font-size:9.5px;color:#4a6a7a;">
+                        <div style="font-weight:600;color:#0b2b3d;">ID Tamu: #${t.no || '-'}</div>
+                        <div style="margin-top:2px;">${tanggalCetak}</div>
+                        <div>Pukul ${waktuCetak} WIB</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="background:${statusBg};border-left:5px solid ${statusColor};padding:10px 16px;border-radius:8px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                    <div style="font-size:9.5px;color:${statusColor};font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Status Wajib Lapor</div>
+                    <div style="font-size:16px;font-weight:700;color:${statusColor};margin-top:2px;">${t.status || 'Belum Lapor'}</div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:9.5px;color:${statusColor};font-weight:600;">Tanggal Kunjungan</div>
+                    <div style="font-size:13px;font-weight:700;color:${statusColor};margin-top:2px;">${t.tanggal || '-'}</div>
+                </div>
+            </div>
+
+            <div style="margin-bottom:16px;">
+                <div style="font-size:11px;font-weight:700;color:#0b2b3d;text-transform:uppercase;letter-spacing:0.7px;padding-bottom:6px;border-bottom:2px solid #e9edf4;margin-bottom:10px;">📋 Data Identitas</div>
+                <table style="width:100%;border-collapse:collapse;font-size:11px;">
+                    <tr><td style="padding:7px 10px;background:#f8faff;border:1px solid #e9edf4;width:32%;font-weight:600;color:#4a6a7a;">Nama Lengkap</td><td style="padding:7px 10px;border:1px solid #e9edf4;font-weight:700;color:#0b2b3d;">${t.nama || '-'}</td></tr>
+                    <tr><td style="padding:7px 10px;background:#f8faff;border:1px solid #e9edf4;font-weight:600;color:#4a6a7a;">NIK</td><td style="padding:7px 10px;border:1px solid #e9edf4;color:#1a3145;font-family:monospace;">${t.nik || '-'}</td></tr>
+                    <tr><td style="padding:7px 10px;background:#f8faff;border:1px solid #e9edf4;font-weight:600;color:#4a6a7a;">Jenis Kelamin</td><td style="padding:7px 10px;border:1px solid #e9edf4;color:#1a3145;">${t.jk || '-'}</td></tr>
+                    <tr><td style="padding:7px 10px;background:#f8faff;border:1px solid #e9edf4;font-weight:600;color:#4a6a7a;">Tempat Lahir</td><td style="padding:7px 10px;border:1px solid #e9edf4;color:#1a3145;">${t.tmpLahir || '-'}</td></tr>
+                    <tr><td style="padding:7px 10px;background:#f8faff;border:1px solid #e9edf4;font-weight:600;color:#4a6a7a;">Tanggal Lahir</td><td style="padding:7px 10px;border:1px solid #e9edf4;color:#1a3145;">${t.tglLahir || '-'}</td></tr>
+                    <tr><td style="padding:7px 10px;background:#f8faff;border:1px solid #e9edf4;font-weight:600;color:#4a6a7a;">Agama</td><td style="padding:7px 10px;border:1px solid #e9edf4;color:#1a3145;">${t.agama || '-'}</td></tr>
+                    <tr><td style="padding:7px 10px;background:#f8faff;border:1px solid #e9edf4;font-weight:600;color:#4a6a7a;">Pendidikan</td><td style="padding:7px 10px;border:1px solid #e9edf4;color:#1a3145;">${t.pendidikan || '-'}</td></tr>
+                    <tr><td style="padding:7px 10px;background:#f8faff;border:1px solid #e9edf4;font-weight:600;color:#4a6a7a;">Pekerjaan</td><td style="padding:7px 10px;border:1px solid #e9edf4;color:#1a3145;">${t.pekerjaan || '-'}</td></tr>
+                </table>
+            </div>
+
+            <div style="margin-bottom:16px;">
+                <div style="font-size:11px;font-weight:700;color:#0b2b3d;text-transform:uppercase;letter-spacing:0.7px;padding-bottom:6px;border-bottom:2px solid #e9edf4;margin-bottom:10px;">🚪 Data Kunjungan</div>
+                <table style="width:100%;border-collapse:collapse;font-size:11px;">
+                    <tr><td style="padding:7px 10px;background:#f8faff;border:1px solid #e9edf4;width:32%;font-weight:600;color:#4a6a7a;">Kontak / Telepon</td><td style="padding:7px 10px;border:1px solid #e9edf4;color:#1a3145;">${kontak !== '-' ? `<span style="color:#25D366;font-weight:600;">📱 ${kontak}</span>` : '-'}</td></tr>
+                    <tr><td style="padding:7px 10px;background:#f8faff;border:1px solid #e9edf4;font-weight:600;color:#4a6a7a;">Keperluan</td><td style="padding:7px 10px;border:1px solid #e9edf4;color:#1a3145;font-weight:600;">${t.keperluan || '-'}</td></tr>
+                    <tr><td style="padding:7px 10px;background:#f8faff;border:1px solid #e9edf4;font-weight:600;color:#4a6a7a;">Tanggal Kunjungan</td><td style="padding:7px 10px;border:1px solid #e9edf4;color:#1a3145;">${t.tanggal || '-'}</td></tr>
+                    <tr><td style="padding:7px 10px;background:#f8faff;border:1px solid #e9edf4;font-weight:600;color:#4a6a7a;">Status</td><td style="padding:7px 10px;border:1px solid #e9edf4;"><span style="display:inline-block;padding:3px 12px;border-radius:20px;font-size:10px;font-weight:700;background:${statusBg};color:${statusColor};">${t.status || '-'}</span></td></tr>
+                </table>
+            </div>
+
+            ${fileInfoHtml}
+
+            <div style="margin-top:20px;padding:10px 14px;background:#fff8e1;border-left:4px solid #f39c12;border-radius:6px;font-size:9.5px;color:#7a5c1c;line-height:1.5;">
+                <strong>📌 Catatan:</strong> Data ini merupakan laporan tamu wajib lapor sesuai ketentuan keamanan lingkungan RT. Mohon tamu melapor ke pengurus RT dalam waktu 1×24 jam sejak kedatangan.
+            </div>
+
+            <div style="margin-top:30px;padding-top:16px;border-top:2px solid #e9edf4;display:flex;justify-content:space-between;align-items:flex-start;">
+                <div style="font-size:9.5px;color:#6a7e94;">
+                    <div style="font-weight:600;color:#0b2b3d;margin-bottom:3px;">Dicetak oleh:</div>
+                    <div>Aplikasi RT Kita</div>
+                    <div style="margin-top:2px;">${tanggalCetak} · ${waktuCetak} WIB</div>
+                </div>
+                <div style="text-align:center;font-size:10px;color:#0b2b3d;min-width:200px;">
+                    <div>${settingsData.namaRT || 'RT 08 · Kelurahan Makmur'}, ${tanggalCetak.split(' ').slice(-1)[0]}</div>
+                    <div style="margin-top:4px;">Ketua RT</div>
+                    <div style="height:50px;"></div>
+                    <div style="font-weight:700;border-top:1px solid #0b2b3d;padding-top:4px;">${settingsData.ketuaRT || '(...........................)'}</div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(pdfContainer);
+
+        const filename = `Detail_Tamu_${(t.nama || 'Tamu').replace(/\s+/g, '_')}_${(t.tanggal || new Date().toISOString().slice(0,10)).replace(/\s+/g, '_')}.pdf`;
+
+        html2pdf().set({
+            margin: 10,
+            filename: filename,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, letterRendering: true, backgroundColor: '#ffffff' },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+        }).from(pdfContainer).save().then(() => {
+            document.body.removeChild(pdfContainer);
+            btn.classList.remove('loading');
+            btn.innerHTML = originalHtml;
+        }).catch((err) => {
+            console.error('PDF error:', err);
+            document.body.removeChild(pdfContainer);
+            btn.classList.remove('loading');
+            btn.innerHTML = originalHtml;
+            alert('Gagal generate PDF. Silakan coba lagi.');
+        });
+    });
+
+    // ======================================================================
     // TAMU DETAIL ACTIONS
     // ======================================================================
     document.getElementById('btnTamuCopyText').addEventListener('click', function() {
@@ -2139,43 +2283,32 @@
     }
 
     // ======================================================================
-    // 🆕 EXPORT PDF DATA TAMU WAJIB LAPOR
+    // EXPORT PDF SEMUA DATA TAMU
     // ======================================================================
     document.getElementById('btnExportTamuPDF').addEventListener('click', function() {
         if (tamuWajibLapor.length === 0) {
             alert('Belum ada data tamu untuk diekspor.');
             return;
         }
-
         const btn = this;
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
 
-        // Buat container untuk PDF
         const pdfContainer = document.createElement('div');
         pdfContainer.style.cssText = 'padding:24px;background:white;font-family:"Segoe UI",Arial,sans-serif;width:100%;';
 
-        // Header laporan
-        const tanggalCetak = new Date().toLocaleDateString('id-ID', {
-            day: 'numeric', month: 'long', year: 'numeric'
-        });
-        const waktuCetak = new Date().toLocaleTimeString('id-ID', {
-            hour: '2-digit', minute: '2-digit'
-        });
-
-        // Statistik
+        const tanggalCetak = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+        const waktuCetak = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
         const totalTamu = tamuWajibLapor.length;
         const sudahLapor = tamuWajibLapor.filter(t => t.status === 'Sudah Lapor').length;
         const belumLapor = tamuWajibLapor.filter(t => t.status === 'Belum Lapor').length;
 
-        // Baris tabel
         let rows = '';
         tamuWajibLapor.forEach((t, index) => {
             const kontak = t.kontak || t.noTelp || '-';
             const statusColor = t.status === 'Sudah Lapor' ? '#155724' : '#721c24';
             const statusBg = t.status === 'Sudah Lapor' ? '#d4edda' : '#f8d7da';
             const statusBadge = `<span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:9px;font-weight:600;background:${statusBg};color:${statusColor};">${t.status || '-'}</span>`;
-
             rows += `
                 <tr>
                     <td style="padding:6px 8px;border-bottom:1px solid #e5ecf5;text-align:center;font-weight:600;color:#4a6a7a;">${t.no || index + 1}</td>
@@ -2194,32 +2327,24 @@
         });
 
         pdfContainer.innerHTML = `
-            <!-- HEADER -->
             <div style="border-bottom:3px solid #1c5f4e;padding-bottom:14px;margin-bottom:18px;">
                 <div style="display:flex;justify-content:space-between;align-items:flex-start;">
                     <div>
                         <div style="font-size:22px;font-weight:700;color:#0b2b3d;letter-spacing:0.5px;">
                             🏠 ${settingsData.namaRT || 'RT 08 · Kelurahan Makmur'}
                         </div>
-                        <div style="font-size:20px;font-weight:700;color:#1c5f4e;margin-top:8px;">
-                            LAPORAN TAMU WAJIB LAPOR
-                        </div>
-                        <div style="font-size:11px;color:#6a7e94;margin-top:4px;">
-                            Laporan lengkap data tamu wajib lapor di lingkungan RT
-                        </div>
+                        <div style="font-size:20px;font-weight:700;color:#1c5f4e;margin-top:8px;">LAPORAN TAMU WAJIB LAPOR</div>
+                        <div style="font-size:11px;color:#6a7e94;margin-top:4px;">Laporan lengkap data tamu wajib lapor di lingkungan RT</div>
                     </div>
                     <div style="text-align:right;font-size:10px;color:#4a6a7a;">
                         <div style="font-weight:600;color:#0b2b3d;">Dicetak pada:</div>
                         <div>${tanggalCetak}</div>
                         <div>Pukul ${waktuCetak} WIB</div>
-                        <div style="margin-top:6px;padding:3px 10px;background:#e8f4f0;border-radius:20px;display:inline-block;color:#1c5f4e;font-weight:600;">
-                            Total: ${totalTamu} Tamu
-                        </div>
+                        <div style="margin-top:6px;padding:3px 10px;background:#e8f4f0;border-radius:20px;display:inline-block;color:#1c5f4e;font-weight:600;">Total: ${totalTamu} Tamu</div>
                     </div>
                 </div>
             </div>
 
-            <!-- STATISTIK -->
             <div style="display:flex;gap:10px;margin-bottom:16px;">
                 <div style="flex:1;background:linear-gradient(135deg,#e8f4f0 0%,#d4ebe5 100%);padding:10px 14px;border-radius:10px;border-left:4px solid #1c5f4e;">
                     <div style="font-size:9px;color:#1c5f4e;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Total Tamu</div>
@@ -2235,7 +2360,6 @@
                 </div>
             </div>
 
-            <!-- TABEL -->
             <table style="width:100%;border-collapse:collapse;font-size:10px;border:1px solid #dde3ed;border-radius:8px;overflow:hidden;">
                 <thead>
                     <tr style="background:linear-gradient(135deg,#0b2b3d 0%,#1c5f4e 100%);">
@@ -2250,11 +2374,8 @@
                 <tbody>${rows}</tbody>
             </table>
 
-            <!-- FOOTER -->
             <div style="margin-top:18px;padding-top:12px;border-top:1px dashed #dde3ed;display:flex;justify-content:space-between;align-items:center;font-size:9px;color:#6a7e94;">
-                <div>
-                    <i>📄 Dokumen ini digenerate otomatis oleh Aplikasi RT Kita</i>
-                </div>
+                <div><i>📄 Dokumen ini digenerate otomatis oleh Aplikasi RT Kita</i></div>
                 <div style="text-align:right;">
                     <div style="font-weight:600;color:#1c5f4e;">${settingsData.namaRT || 'RT 08'}</div>
                     <div>${settingsData.ketuaRT ? 'Ketua RT: ' + settingsData.ketuaRT : ''}</div>
@@ -2263,7 +2384,6 @@
         `;
 
         document.body.appendChild(pdfContainer);
-
         const filename = `Laporan_Tamu_Wajib_Lapor_${new Date().toISOString().slice(0,10)}.pdf`;
 
         html2pdf().set({
@@ -2665,6 +2785,12 @@
                 .catch(err => alert('Gagal menyimpan: ' + err.message));
         } else {
             const docId = dataKeluarga[editIndex].id;
+            const oldData = dataKeluarga[editIndex];
+            data.fileUrl = oldData.fileUrl || null;
+            data.fileName = oldData.fileName || null;
+            data.fileType = oldData.fileType || null;
+            data.fileSize = oldData.fileSize || 0;
+            data.fileTime = oldData.fileTime || null;
             keluargaRef.doc(docId).update(data).then(() => {
                 loadAllData(); closeModal('modalKeluarga');
                 alert('Data keluarga berhasil diupdate!'); editIndex = -1;
@@ -2705,7 +2831,6 @@
                 .catch(err => alert('Gagal menambahkan: ' + err.message));
         } else {
             const docId = tamuWajibLapor[editTamuIndex].id;
-            // Pertahankan file lama
             const oldData = tamuWajibLapor[editTamuIndex];
             data.fileUrl = oldData.fileUrl || null;
             data.fileName = oldData.fileName || null;
@@ -3116,7 +3241,7 @@
     });
 
     // ======================================================================
-    // FILTER IURAN EVENTS
+    // FILTER IURAN
     // ======================================================================
     document.getElementById('btnFilterIuran').addEventListener('click', applyIuranFilter);
     document.getElementById('filterBulan').addEventListener('change', applyIuranFilter);
