@@ -1,2040 +1,1640 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Kontrol Pengiriman Sparepart — Sindo Sync</title>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  :root{
-    --bg:#eef2f7; --panel:#ffffff; --ink:#0f172a; --muted:#64748b;
-    --line:#e2e8f0; --brand:#2563eb; --brand-dark:#1d4ed8;
-    --green:#16a34a; --amber:#d97706; --red:#dc2626;
-  }
-  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
-    background:var(--bg); color:var(--ink); font-size:13px; padding:18px}
-  .page-head{background:linear-gradient(120deg,#0f172a,#1e3a8a);color:#fff;border-radius:14px;
-    padding:20px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;
-    box-shadow:0 8px 24px rgba(15,23,42,.18)}
-  .logo{width:46px;height:46px;border-radius:12px;background:rgba(255,255,255,.14);
-    display:grid;place-items:center;font-size:22px;flex:none}
-  .page-head h1{font-size:19px;font-weight:700;letter-spacing:.2px}
-  .page-head p{font-size:12px;color:#c7d2fe;margin-top:3px}
-  .head-badge{margin-left:auto;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);
-    padding:8px 14px;border-radius:10px;font-size:12px;font-weight:600}
-  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:16px 0}
-  .stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
-  .stat .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:600}
-  .stat .val{font-size:22px;font-weight:700;margin-top:5px}
-  .stat.b .val{color:var(--brand)} .stat.g .val{color:var(--green)}
-  .stat.a .val{color:var(--amber)} .stat.r .val{color:var(--red)}
-  .toolbar{background:var(--panel);border:1px solid var(--line);border-radius:12px;
-    padding:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
-  .search{position:relative;flex:1;min-width:200px}
-  .search input{width:100%;padding:9px 12px 9px 34px;border:1px solid var(--line);border-radius:9px;
-    font-size:13px;outline:none;background:#f8fafc}
-  .search input:focus{border-color:var(--brand);background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
-  .search::before{content:"🔍";position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:12px;opacity:.6}
-  select.filter{padding:9px 12px;border:1px solid var(--line);border-radius:9px;font-size:13px;
-    background:#f8fafc;outline:none;cursor:pointer}
-  select.filter:focus{border-color:var(--brand)}
-  .btn{border:none;border-radius:9px;padding:9px 16px;font-size:13px;font-weight:600;
-    cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
-  .btn.primary{background:var(--brand);color:#fff}
-  .btn.primary:hover{background:var(--brand-dark)}
-  .btn.ghost{background:#f1f5f9;color:#334155;border:1px solid var(--line)}
-  .btn.ghost:hover{background:#e2e8f0}
-  .btn.green{background:var(--green);color:#fff}
-  .btn.green:hover{background:#15803d}
-  .btn.excel{background:#107c41;color:#fff}
-  .btn.excel:hover{background:#0c5e31}
-  .btn.danger{background:#fee2e2;color:var(--red)}
-  .btn.danger:hover{background:#fecaca}
-  .hint-bar{
-    background:#fffbeb;border:1px solid #fde68a;color:#92400e;
-    padding:10px 16px;border-radius:10px;font-size:12px;font-weight:500;
-    margin-bottom:12px;display:flex;align-items:center;gap:9px;
-  }
-  .hint-bar .icon{font-size:15px}
-  .hint-bar b{color:#78350f}
-  .table-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
-  .table-wrap{overflow:auto;max-height:calc(100vh - 380px);min-height:280px}
-  .table-wrap::-webkit-scrollbar{width:12px;height:12px}
-  .table-wrap::-webkit-scrollbar-track{background:#e2e8f0}
-  .table-wrap::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:6px}
-  .table-wrap::-webkit-scrollbar-thumb:hover{background:#64748b}
-  .main-table{border-collapse:separate;border-spacing:0;min-width:max-content;width:100%}
-  .main-table thead th{
-    position:sticky;top:0;z-index:2;
-    background:#1e293b;color:#e2e8f0;
-    font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;
-    padding:11px 14px;text-align:left;white-space:nowrap;
-    border-right:1px solid #334155;border-bottom:2px solid #0f172a;
-  }
-  .main-table thead th:last-child{border-right:none}
-  .main-table thead th:first-child{left:0;z-index:4;background:#0f172a}
-  .main-table thead th.input-col{background:#0f766e;color:#fff}
-  .main-table thead th.input-col::after{
-    content:'✎';font-size:10px;margin-left:6px;opacity:.7;
-  }
-  .main-table tbody td{
-    padding:11px 14px;border-bottom:1px solid var(--line);border-right:1px solid #f1f5f9;
-    background:#fff;white-space:nowrap;vertical-align:middle;font-size:12.5px;
-  }
-  .main-table tbody td:last-child{border-right:none}
-  .main-table tbody tr{cursor:pointer;transition:.12s}
-  .main-table tbody tr:nth-child(even) td{background:#f8fafc}
-  .main-table tbody tr:hover td{background:#eff6ff}
-  .main-table tbody td:first-child{
-    position:sticky;left:0;z-index:1;background:#fff;
-    font-weight:700;color:var(--brand);
-    border-right:1px solid var(--line);
-  }
-  .main-table tbody tr:nth-child(even) td:first-child{background:#f8fafc}
-  .main-table tbody tr:hover td:first-child{background:#eff6ff}
-  .main-table .btk-cell{display:flex;align-items:center;gap:10px;min-width:220px}
-  .main-table .btk-icon{
-    width:30px;height:30px;border-radius:8px;background:#dbeafe;color:var(--brand);
-    display:grid;place-items:center;font-size:14px;flex:none;
-  }
-  .main-table .btk-text{font-weight:700;color:#1e293b;letter-spacing:.2px}
-  .main-table .btk-sub{font-size:10.5px;color:#64748b;font-weight:500;margin-top:2px}
-  .main-table .item-cell{text-align:center}
-  .main-table .item-badge{
-    display:inline-block;padding:3px 10px;border-radius:20px;
-    background:#dbeafe;color:#1e40af;font-size:11px;font-weight:700;
-  }
-  .main-table .meta-empty{color:#cbd5e1}
-  .main-table .tcode-cell{font-family:'Consolas','Monaco',monospace;font-weight:600;color:#334155;font-size:12px}
-  .main-table .aksi-col{
-    position:sticky;right:0;z-index:2;background:#f1f5f9;
-    border-left:1px solid var(--line);border-right:none;text-align:center;
-  }
-  .main-table thead th.aksi-col{background:#0f172a;border-left:1px solid #334155;border-right:none}
-  .main-table tbody tr:hover td.aksi-col{background:#dbeafe}
-  .main-table .btn-icon{
-    padding:5px 10px;border-radius:6px;border:1px solid var(--line);background:#fff;
-    cursor:pointer;font-size:11px;font-weight:600;color:#334155;transition:.12s;
-    display:inline-flex;align-items:center;gap:4px;margin:0 2px;
-  }
-  .main-table .btn-icon:hover{background:#eff6ff;border-color:var(--brand);color:var(--brand)}
-  .main-table td.editable-cell{
-    cursor:pointer;position:relative;min-width:130px;
-    transition:background .12s;
-  }
-  .main-table td.editable-cell:hover{
-    background:#fef9c3 !important;
-    box-shadow:inset 0 0 0 2px #fbbf24;
-  }
-  .main-table td.editable-cell::after{
-    content:'✎';position:absolute;right:5px;top:6px;
-    font-size:10px;color:#cbd5e1;opacity:0;transition:opacity .15s;
-  }
-  .main-table td.editable-cell:hover::after{opacity:1;color:#d97706}
-  .main-table td.editable-cell.editing{
-    padding:4px !important;
-    background:#fff !important;
-    box-shadow:inset 0 0 0 2px var(--brand) !important;
-  }
-  .main-table td.editable-cell.editing::after{display:none}
-  .cell-input{
-    width:100%;min-width:120px;
-    border:1px solid var(--brand);border-radius:6px;
-    padding:7px 9px;font-size:12.5px;font-family:inherit;
-    outline:none;background:#fff;color:var(--ink);
-  }
-  .cell-input:focus{box-shadow:0 0 0 3px rgba(37,99,235,.18)}
-  .empty{padding:60px 20px;text-align:center;color:var(--muted)}
-  .empty .big{font-size:38px;margin-bottom:10px}
-  .overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);backdrop-filter:blur(2px);
-    display:none;align-items:center;justify-content:center;padding:20px;z-index:50}
-  .overlay.show{display:flex}
-  .modal{background:#fff;border-radius:16px;width:min(1080px,100%);max-height:92vh;
-    display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.35);animation:pop .18s ease}
-  .modal.small{width:min(680px,100%)}
-  .modal.medium{width:min(1000px,100%)}
-  .modal.wide{width:min(1600px,100%)}
-  @keyframes pop{from{transform:scale(.96);opacity:0}to{transform:scale(1);opacity:1}}
-  .modal-head{padding:16px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px}
-  .modal-head h2{font-size:16px;font-weight:700}
-  .modal-head .sub{font-size:11px;color:var(--muted);margin-top:3px}
-  .close-x{margin-left:auto;background:#f1f5f9;border:none;width:32px;height:32px;border-radius:8px;
-    cursor:pointer;font-size:15px;color:#475569;flex:none}
-  .close-x:hover{background:#e2e8f0}
-  .modal-body{padding:20px 22px;overflow-y:auto}
-  .modal-foot{padding:14px 22px;border-top:1px solid var(--line);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-  .spacer{flex:1}
-  .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
-  .field{display:flex;flex-direction:column;gap:5px}
-  .field.full{grid-column:1/-1}
-  .field label{font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.4px}
-  .field input,.field select,.field textarea{padding:9px 11px;border:1px solid var(--line);border-radius:8px;
-    font-size:13px;font-family:inherit;outline:none;background:#f8fafc;width:100%}
-  .field input:focus,.field select:focus,.field textarea:focus{
-    border-color:var(--brand);background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
-  .field textarea{resize:vertical;min-height:64px}
-  .meta-banner{
-    padding:12px 16px;border-radius:10px;background:#dbeafe;border:1px solid #bfdbfe;
-    color:#1e40af;font-size:13px;font-weight:600;display:flex;align-items:center;gap:10px;
-  }
-  .meta-banner .icon{font-size:18px}
-  .detail-title-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-  .detail-title-row .key{font-size:16px;font-weight:700;color:#1e293b;letter-spacing:.2px}
-  .detail-title-row .count-pill{font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;
-    background:#dbeafe;color:#1e40af}
-  .detail-hint{font-size:11px;color:var(--muted);margin-top:4px}
-  .detail-sheet-wrap{
-    flex:1; overflow:auto; background:#f8fafc;
-    min-height:340px; max-height:calc(92vh - 200px);
-  }
-  .detail-sheet-wrap::-webkit-scrollbar{width:12px;height:12px}
-  .detail-sheet-wrap::-webkit-scrollbar-track{background:#e2e8f0}
-  .detail-sheet-wrap::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:6px}
-  .detail-sheet-wrap::-webkit-scrollbar-thumb:hover{background:#64748b}
-  .detail-sheet{border-collapse:separate;border-spacing:0;min-width:max-content;width:100%;font-size:12.5px}
-  .detail-sheet thead th{
-    position:sticky;top:0;z-index:2;
-    background:#1e293b;color:#e2e8f0;
-    font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
-    padding:11px 14px;text-align:left;white-space:nowrap;
-    border-right:1px solid #334155;border-bottom:2px solid #0f172a;
-  }
-  .detail-sheet thead th:last-child{border-right:none}
-  .detail-sheet thead th:first-child{left:0;z-index:4;background:#0f172a}
-  .detail-sheet tbody td{
-    padding:11px 14px;border-bottom:1px solid var(--line);border-right:1px solid #f1f5f9;
-    background:#fff;white-space:nowrap;vertical-align:middle;
-  }
-  .detail-sheet tbody td:last-child{border-right:none}
-  .detail-sheet tbody tr:nth-child(even) td{background:#f8fafc}
-  .detail-sheet tbody tr:hover td{background:#eff6ff}
-  .detail-sheet tbody td:first-child{
-    position:sticky;left:0;z-index:1;background:#fff;
-    font-weight:700;color:var(--brand);border-right:1px solid var(--line);
-  }
-  .detail-sheet tbody tr:nth-child(even) td:first-child{background:#f8fafc}
-  .detail-sheet tbody tr:hover td:first-child{background:#eff6ff}
-  .detail-sheet .col-aksi{
-    text-align:center;white-space:nowrap;background:#f1f5f9 !important;
-    position:sticky;right:0;z-index:2;
-    border-left:1px solid var(--line);border-right:none;
-  }
-  .detail-sheet thead th.col-aksi{background:#0f172a !important;color:#fff;border-left:1px solid #334155}
-  .detail-sheet tbody tr:hover td.col-aksi{background:#dbeafe !important}
-  .detail-sheet .qty-cell{text-align:center;font-weight:700}
-  .detail-sheet .pn-cell,.detail-sheet .po-cell{font-weight:600;color:#1e293b}
-  .detail-sheet .desc-cell{color:#334155;max-width:260px;overflow:hidden;text-overflow:ellipsis}
-  .detail-sheet .ana-cell{color:#475569;max-width:240px;overflow:hidden;text-overflow:ellipsis}
-  .detail-summary{font-size:12px;color:#475569;font-weight:600}
-  .detail-summary b{color:#1e293b}
-  .btn-icon{padding:5px 11px;border-radius:7px;border:1px solid var(--line);background:#fff;
-    cursor:pointer;font-size:11.5px;font-weight:600;color:#334155;transition:.12s;
-    display:inline-flex;align-items:center;gap:4px;margin:0 2px}
-  .btn-icon:hover{background:#eff6ff;border-color:var(--brand);color:var(--brand)}
-  .btn-icon.danger{color:var(--red)}
-  .btn-icon.danger:hover{background:#fee2e2;border-color:var(--red);color:var(--red)}
-  .pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
-  .pill.open{background:#fef3c7;color:#92400e}
-  .pill.proses{background:#dbeafe;color:#1e40af}
-  .pill.selesai{background:#dcfce7;color:#166534}
-  .pill.batal{background:#fee2e2;color:#991b1b}
-  .pill.dalamperjalanan{background:#dbeafe;color:#1e40af}
-  .pill.tibditujuan{background:#fef3c7;color:#92400e}
-  .pill.tiba{background:#fef3c7;color:#92400e}
-  .pill.terkirim{background:#dcfce7;color:#166534}
-  .pill.gagalkirim{background:#fee2e2;color:#991b1b}
-  .pill.dalamproses{background:#e0e7ff;color:#3730a3}
-  .yn{font-weight:700}
-  .yn.ya{color:var(--green)}
-  .yn.tidak{color:#94a3b8}
-  .drop-zone{border:2px dashed #cbd5e1;border-radius:14px;padding:34px 20px;text-align:center;
-    background:#f8fafc;cursor:pointer;transition:.15s}
-  .drop-zone:hover,.drop-zone.drag{border-color:var(--brand);background:#eff6ff}
-  .drop-zone .icon{font-size:42px;margin-bottom:10px}
-  .drop-zone .ttl{font-size:14px;font-weight:700;color:#1e293b}
-  .drop-zone .hint{font-size:12px;color:var(--muted);margin-top:6px}
-  .file-chip{display:none;align-items:center;gap:10px;margin-top:14px;padding:12px 16px;
-    background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px}
-  .file-chip.show{display:flex}
-  .file-chip .fc-icon{font-size:22px}
-  .file-chip .fc-name{font-weight:700;color:#065f46;font-size:13px}
-  .file-chip .fc-meta{font-size:11px;color:#047857;margin-top:2px}
-  .file-chip .fc-x{margin-left:auto;background:#d1fae5;border:none;width:28px;height:28px;border-radius:7px;cursor:pointer;color:#065f46}
-  .file-chip .fc-x:hover{background:#a7f3d0}
-  .opt-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:16px;padding:14px;
-    background:#f8fafc;border-radius:10px;border:1px solid var(--line)}
-  .opt-row label{font-size:12px;font-weight:600;color:#334155;cursor:pointer;display:flex;align-items:center;gap:6px}
-  .preview-box{margin-top:14px;display:none;border:1px solid var(--line);border-radius:10px;overflow:hidden}
-  .preview-box.show{display:block}
-  .preview-head{padding:10px 14px;background:#f1f5f9;font-size:12px;font-weight:700;color:#334155;
-    border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
-  .preview-scroll{max-height:230px;overflow:auto}
-  .preview-scroll table{width:100%;font-size:11px;min-width:0}
-  .preview-scroll th{position:sticky;top:0;background:#e2e8f0;color:#1e293b;padding:7px 10px;font-size:10px;text-align:left;white-space:nowrap}
-  .preview-scroll td{padding:6px 10px;border-bottom:1px solid #f1f5f9;white-space:nowrap}
-  .mapping-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-  .map-tag{font-size:10.5px;padding:4px 9px;border-radius:6px;background:#dcfce7;color:#166534;font-weight:600}
-  .map-tag.miss{background:#fef3c7;color:#92400e}
-  .map-tag.meta{background:#dbeafe;color:#1e40af}
-  .alert{padding:10px 14px;border-radius:9px;font-size:12px;margin-top:12px;display:none}
-  .alert.show{display:block}
-  .alert.info{background:#dbeafe;color:#1e40af}
-  .alert.warn{background:#fef3c7;color:#92400e}
-  .alert.err{background:#fee2e2;color:#991b1b}
-  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);
-    background:#0f172a;color:#fff;padding:11px 20px;border-radius:10px;font-size:13px;font-weight:600;
-    opacity:0;transition:.28s;z-index:99;pointer-events:none;max-width:90vw;text-align:center}
-  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Lacak paket SINDO Express dengan mudah dan cepat">
+    <title>SINDO Express - Lacak Paket</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
+    <style>
+        /* ========== RESET & VARIABEL ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
 
-  /* ===== SINDO SYNC STYLES ===== */
-  .no-resi-cell{min-width:250px !important;}
-  .no-resi-wrapper{display:flex;align-items:center;gap:8px;}
-  .no-resi-display{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .sync-btn{
-    flex:none;padding:4px 10px;border-radius:6px;
-    border:1px solid #a5b4fc;background:#eef2ff;color:#4338ca;
-    font-size:10.5px;font-weight:700;cursor:pointer;transition:all .15s;
-    white-space:nowrap;display:inline-flex;align-items:center;gap:4px;
-  }
-  .sync-btn:hover:not(:disabled){background:#4338ca;color:#fff;border-color:#4338ca;}
-  .sync-btn:disabled{opacity:.55;cursor:not-allowed;background:#f1f5f9;color:#94a3b8;border-color:#e2e8f0;}
-  .sync-btn.loading{background:#fef3c7;color:#92400e;border-color:#fde68a;}
-  .sync-btn.success{background:#dcfce7;color:#166534;border-color:#86efac;}
-  .sync-btn.error{background:#fee2e2;color:#991b1b;border-color:#fca5a5;}
-  .sync-status-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+        :root {
+            --primary: #004a99;
+            --primary-dark: #003366;
+            --primary-light: #e6f0fa;
+            --accent: #ff6600;
+            --accent-dark: #e55a00;
+            --text-dark: #333;
+            --text-light: #777;
+            --border: #e0e0e0;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --info: #17a2b8;
+            --bg-light: #f5f7fa;
+            --bg-white: #ffffff;
+            --bg-card: #ffffff;
+            --white: #ffffff;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 15px rgba(0,0,0,0.08);
+            --shadow-lg: 0 10px 30px rgba(0,0,0,0.12);
+            --radius: 10px;
+            --radius-sm: 6px;
+            --transition: all 0.3s ease;
+        }
 
-  /* Modal detail Sindo */
-  .sindo-detail-row{display:flex;padding:8px 0;border-bottom:1px dashed #e2e8f0;font-size:13px;}
-  .sindo-detail-row:last-child{border-bottom:none;}
-  .sindo-detail-label{flex:0 0 180px;font-weight:600;color:#475569;}
-  .sindo-detail-value{flex:1;color:#0f172a;word-break:break-word;}
-  .sindo-timeline{margin-top:14px;border-top:1px solid #e2e8f0;padding-top:14px;}
-  .sindo-timeline-item{
-    display:flex;gap:12px;padding:10px 0;
-    border-left:3px solid #2563eb;padding-left:14px;margin-left:4px;position:relative;
-  }
-  .sindo-timeline-item::before{
-    content:'';position:absolute;left:-7px;top:14px;
-    width:11px;height:11px;border-radius:50%;background:#2563eb;
-    border:2px solid #fff;box-shadow:0 0 0 1px #2563eb;
-  }
-  .sindo-timeline-date{flex:0 0 150px;font-size:11.5px;color:#64748b;font-weight:600;}
-  .sindo-timeline-text{flex:1;font-size:12.5px;color:#1e293b;}
-  .sindo-timeline-text b{display:block;color:#0f172a;margin-bottom:2px;}
+        body.dark-mode {
+            --text-dark: #e8eaed;
+            --text-light: #9aa0a6;
+            --border: #3c4043;
+            --bg-light: #1a1a1a;
+            --bg-white: #202124;
+            --bg-card: #292a2d;
+            --primary-light: #1a2a3a;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+            --shadow-md: 0 4px 15px rgba(0,0,0,0.4);
+            --shadow-lg: 0 10px 30px rgba(0,0,0,0.5);
+        }
 
-  /* Badge status koneksi proxy */
-  .proxy-status{
-    display:inline-flex;align-items:center;gap:6px;
-    padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;
-    background:#f1f5f9;color:#64748b;border:1px solid var(--line);
-  }
-  .proxy-status.online{background:#dcfce7;color:#166534;border-color:#86efac;}
-  .proxy-status.offline{background:#fee2e2;color:#991b1b;border-color:#fca5a5;}
-  .proxy-status::before{content:'●';font-size:9px;}
+        html { scroll-behavior: smooth; }
 
-  @media(max-width:640px){
-    body{padding:10px}
-    .page-head{padding:16px}
-    .page-head h1{font-size:16px}
-    .head-badge{display:none}
-  }
-</style>
+        body {
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .container {
+            max-width: 1150px;
+            margin: 0 auto;
+            padding: 0 20px;
+            width: 100%;
+        }
+
+        /* ========== HEADER ========== */
+        .header {
+            background: var(--bg-white);
+            box-shadow: var(--shadow-sm);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            transition: background 0.3s;
+        }
+
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 20px;
+            gap: 20px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .logo-icon {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: var(--white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            font-size: 20px;
+            box-shadow: 0 4px 10px rgba(0,74,153,0.3);
+        }
+
+        .logo-text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1;
+        }
+
+        .logo-main {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--primary);
+            letter-spacing: 1px;
+        }
+
+        .logo-sub {
+            font-size: 11px;
+            color: var(--accent);
+            font-weight: 600;
+            letter-spacing: 3px;
+            margin-top: 3px;
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        .nav-menu a {
+            color: var(--text-dark);
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: var(--radius-sm);
+            font-weight: 500;
+            font-size: 14px;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .nav-menu a:hover {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+
+        .nav-menu a.active {
+            background: var(--primary);
+            color: var(--white);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .btn-theme, .btn-menu {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            background: var(--primary-light);
+            color: var(--primary);
+            cursor: pointer;
+            font-size: 16px;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-theme:hover, .btn-menu:hover {
+            background: var(--primary);
+            color: var(--white);
+            transform: rotate(15deg);
+        }
+
+        .btn-menu { display: none; }
+
+        /* ========== HERO ========== */
+        .hero {
+            position: relative;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            padding: 60px 0 70px;
+            color: var(--white);
+            overflow: hidden;
+        }
+
+        .hero-bg {
+            position: absolute;
+            inset: 0;
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(255,102,0,0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255,255,255,0.1) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.25);
+            color: var(--white);
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 18px;
+            backdrop-filter: blur(10px);
+        }
+
+        .hero h1 {
+            font-size: 38px;
+            margin-bottom: 12px;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .hero h1 span { color: var(--accent); }
+
+        .hero p {
+            font-size: 16px;
+            opacity: 0.9;
+            margin-bottom: 35px;
+        }
+
+        /* ========== FORM TRACKING ========== */
+        .tracking-form-wrapper {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .tracking-form { width: 100%; }
+
+        .input-group {
+            display: flex;
+            background: var(--bg-white);
+            border-radius: 50px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            align-items: center;
+            padding: 6px;
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .input-group:focus-within {
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3), 0 0 0 3px rgba(255,102,0,0.4);
+        }
+
+        .input-icon {
+            padding: 0 15px 0 20px;
+            color: var(--text-light);
+            font-size: 18px;
+        }
+
+        .input-group input {
+            flex: 1;
+            padding: 14px 10px;
+            border: none;
+            font-size: 16px;
+            outline: none;
+            color: var(--text-dark);
+            background: transparent;
+            min-width: 0;
+        }
+
+        .input-group input::placeholder { color: #aaa; }
+
+        .btn-clear {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            cursor: pointer;
+            font-size: 18px;
+            padding: 0 10px;
+            transition: color 0.2s;
+        }
+
+        .btn-clear:hover { color: var(--danger); }
+
+        .btn-track {
+            background: var(--accent);
+            color: var(--white);
+            border: none;
+            padding: 14px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+            border-radius: 50px;
+            height: 48px;
+        }
+
+        .btn-track:hover {
+            background: var(--accent-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255,102,0,0.4);
+        }
+
+        .btn-track:active { transform: translateY(0); }
+        .btn-track.loading { pointer-events: none; opacity: 0.7; }
+
+        .error-message {
+            color: #ffcccc;
+            margin-top: 12px;
+            font-size: 14px;
+            min-height: 20px;
+            font-weight: 500;
+        }
+
+        .quick-samples {
+            margin-top: 18px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            align-items: center;
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        .sample-chip {
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: var(--white);
+            padding: 4px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: var(--transition);
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+        }
+
+        .sample-chip:hover {
+            background: var(--accent);
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+
+        /* ========== RIWAYAT ========== */
+        .history-wrapper {
+            max-width: 700px;
+            margin: 25px auto 0;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: var(--radius);
+            padding: 15px 20px;
+            backdrop-filter: blur(10px);
+            text-align: left;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            opacity: 0.95;
+        }
+
+        .btn-link {
+            background: none;
+            border: none;
+            color: var(--accent);
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            text-decoration: underline;
+            transition: opacity 0.2s;
+        }
+
+        .btn-link:hover { opacity: 0.7; }
+
+        .history-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .history-item {
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.25);
+            color: var(--white);
+            padding: 6px 14px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .history-item:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+
+        .history-item i { font-size: 10px; opacity: 0.7; }
+
+        /* ========== LOADING ========== */
+        .loading-wrapper { padding: 50px 0; }
+
+        .loading-box {
+            text-align: center;
+            padding: 40px;
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-md);
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading-box p { color: var(--text-light); font-weight: 500; }
+
+        /* ========== HASIL TRACKING ========== */
+        .tracking-result {
+            padding: 40px 0 60px;
+            animation: fadeInUp 0.5s ease;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 25px;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .result-header h2 {
+            font-size: 24px;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .result-header h2 i { color: var(--accent); }
+
+        .result-subtitle {
+            font-size: 14px;
+            color: var(--text-light);
+            margin-top: 4px;
+        }
+
+        .result-actions { display: flex; gap: 8px; }
+
+        .btn-action {
+            width: 42px;
+            height: 42px;
+            border: 2px solid var(--border);
+            background: var(--bg-white);
+            color: var(--text-dark);
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 15px;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-action:hover {
+            background: var(--primary);
+            color: var(--white);
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .btn-close-action:hover {
+            background: var(--danger);
+            border-color: var(--danger);
+        }
+
+        /* Status Banner */
+        .status-banner {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: var(--white);
+            padding: 22px 25px;
+            border-radius: var(--radius);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            box-shadow: var(--shadow-md);
+        }
+
+        .status-icon {
+            width: 55px;
+            height: 55px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .status-text {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .status-label {
+            font-size: 12px;
+            opacity: 0.85;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-value { font-size: 20px; font-weight: 700; }
+
+        .status-progress {
+            flex: 1;
+            min-width: 200px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 8px;
+            background: rgba(255,255,255,0.25);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent);
+            border-radius: 10px;
+            width: 0%;
+            transition: width 1s ease;
+        }
+
+        .progress-text {
+            font-size: 14px;
+            font-weight: 700;
+            min-width: 45px;
+            text-align: right;
+        }
+
+        /* Info Grid */
+        .result-info {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 25px;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 20px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 18px;
+        }
+
+        .info-item {
+            display: flex;
+            gap: 12px;
+            padding: 12px;
+            border-radius: var(--radius-sm);
+            transition: background 0.2s;
+        }
+
+        .info-item:hover { background: var(--primary-light); }
+
+        .info-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--primary-light);
+            color: var(--primary);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .info-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+        }
+
+        .info-content .label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-light);
+            font-weight: 600;
+        }
+
+        .info-content .value {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-dark);
+            word-break: break-word;
+        }
+
+        /* Timeline */
+        .timeline-wrapper {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 25px;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 20px;
+        }
+
+        .timeline-wrapper h3 {
+            font-size: 18px;
+            color: var(--text-dark);
+            margin-bottom: 25px;
+            padding-bottom: 14px;
+            border-bottom: 2px solid var(--primary-light);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .timeline-wrapper h3 i { color: var(--accent); }
+
+        .timeline {
+            position: relative;
+            padding-left: 35px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 11px;
+            top: 8px;
+            bottom: 8px;
+            width: 2px;
+            background: var(--border);
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-bottom: 28px;
+            padding-left: 22px;
+        }
+
+        .timeline-item:last-child { padding-bottom: 0; }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -30px;
+            top: 4px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--bg-card);
+            border: 3px solid var(--border);
+            z-index: 1;
+            transition: var(--transition);
+        }
+
+        .timeline-item.active::before {
+            border-color: var(--accent);
+            background: var(--accent);
+            box-shadow: 0 0 0 5px rgba(255,102,0,0.2);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 5px rgba(255,102,0,0.2); }
+            50% { box-shadow: 0 0 0 10px rgba(255,102,0,0.05); }
+        }
+
+        .timeline-item.done::before {
+            border-color: var(--success);
+            background: var(--success);
+        }
+
+        .timeline-time {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-bottom: 4px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .timeline-time i { font-size: 11px; }
+
+        .timeline-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 3px;
+        }
+
+        .timeline-item.active .timeline-title { color: var(--accent); }
+
+        .timeline-desc {
+            font-size: 13px;
+            color: var(--text-light);
+            line-height: 1.5;
+        }
+
+        /* Help Box */
+        .help-box {
+            background: var(--primary-light);
+            border-left: 4px solid var(--primary);
+            border-radius: var(--radius-sm);
+            padding: 18px 22px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .help-box > i { font-size: 28px; color: var(--primary); }
+        .help-box strong { color: var(--text-dark); display: block; margin-bottom: 3px; }
+        .help-box p { font-size: 13px; color: var(--text-light); }
+        .help-box a { color: var(--primary); font-weight: 600; text-decoration: none; }
+        .help-box a:hover { text-decoration: underline; }
+
+        /* ========== FOOTER ========== */
+        .footer {
+            background: var(--primary-dark);
+            color: var(--white);
+            padding: 50px 0 0;
+            margin-top: auto;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1.5fr;
+            gap: 35px;
+            padding-bottom: 35px;
+        }
+
+        .footer-brand .logo { margin-bottom: 15px; }
+        .footer-brand .logo-main,
+        .footer-brand .logo-sub { color: var(--white); }
+
+        .footer-brand p {
+            color: rgba(255,255,255,0.75);
+            font-size: 13px;
+            line-height: 1.7;
+            margin-bottom: 15px;
+        }
+
+        .social-links { display: flex; gap: 10px; }
+
+        .social-links a {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            color: var(--white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            transition: var(--transition);
+            font-size: 14px;
+        }
+
+        .social-links a:hover {
+            background: var(--accent);
+            transform: translateY(-3px);
+        }
+
+        .footer-links h4,
+        .footer-contact h4 {
+            font-size: 15px;
+            margin-bottom: 18px;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .footer-links a {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: rgba(255,255,255,0.75);
+            text-decoration: none;
+            margin-bottom: 10px;
+            font-size: 13px;
+            transition: var(--transition);
+        }
+
+        .footer-links a i {
+            font-size: 10px;
+            color: var(--accent);
+            transition: transform 0.2s;
+        }
+
+        .footer-links a:hover { color: var(--white); }
+        .footer-links a:hover i { transform: translateX(3px); }
+
+        .footer-contact p {
+            font-size: 13px;
+            color: rgba(255,255,255,0.75);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            line-height: 1.5;
+        }
+
+        .footer-contact i {
+            color: var(--accent);
+            margin-top: 3px;
+            flex-shrink: 0;
+        }
+
+        .footer-bottom {
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding: 20px 0;
+            text-align: center;
+            font-size: 13px;
+            color: rgba(255,255,255,0.6);
+        }
+
+        /* ========== TOAST ========== */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--success);
+            color: var(--white);
+            padding: 14px 22px;
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: var(--shadow-lg);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: var(--transition);
+            z-index: 999;
+            pointer-events: none;
+        }
+
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { background: var(--danger); }
+        .toast i { font-size: 18px; }
+
+        /* ========== RESPONSIVE ========== */
+        @media (max-width: 968px) {
+            .footer-content { grid-template-columns: 1fr 1fr; }
+        }
+
+        @media (max-width: 768px) {
+            .nav-menu {
+                position: fixed;
+                top: 70px;
+                right: -100%;
+                flex-direction: column;
+                background: var(--bg-white);
+                width: 250px;
+                height: calc(100vh - 70px);
+                padding: 20px;
+                box-shadow: var(--shadow-lg);
+                transition: right 0.3s ease;
+                align-items: stretch;
+                gap: 5px;
+            }
+
+            .nav-menu.open { right: 0; }
+            .nav-menu a { padding: 12px 15px; font-size: 15px; }
+            .btn-menu { display: flex; }
+
+            .hero { padding: 45px 0 55px; }
+            .hero h1 { font-size: 26px; }
+            .hero p { font-size: 14px; }
+
+            .input-group {
+                flex-direction: column;
+                border-radius: var(--radius);
+                padding: 12px;
+                gap: 8px;
+            }
+
+            .input-icon { display: none; }
+
+            .input-group input {
+                width: 100%;
+                text-align: center;
+                background: var(--bg-light);
+                border-radius: var(--radius-sm);
+                padding: 12px;
+            }
+
+            .btn-clear {
+                position: absolute;
+                right: 22px;
+                top: 20px;
+            }
+
+            .btn-track {
+                width: 100%;
+                justify-content: center;
+                border-radius: var(--radius-sm);
+            }
+
+            .status-banner {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .status-text { align-items: center; }
+            .status-progress { width: 100%; }
+            .info-grid { grid-template-columns: 1fr; }
+
+            .result-header { flex-direction: column; }
+            .result-actions { align-self: flex-end; }
+
+            .footer-content {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+
+            .toast {
+                left: 20px;
+                right: 20px;
+                bottom: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container { padding: 0 15px; }
+            .hero h1 { font-size: 22px; }
+            .logo-main { font-size: 18px; }
+            .logo-sub { font-size: 10px; }
+            .btn-action { width: 38px; height: 38px; font-size: 14px; }
+            .timeline { padding-left: 28px; }
+            .timeline-item { padding-left: 18px; }
+        }
+
+        @media print {
+            .header, .hero, .footer, .result-actions, .help-box, .toast {
+                display: none !important;
+            }
+            .tracking-result { padding: 0; }
+            body { background: white; color: black; }
+            .result-info, .timeline-wrapper, .status-banner {
+                box-shadow: none;
+                border: 1px solid #ddd;
+            }
+        }
+    </style>
 </head>
 <body>
-
-<div class="page-head">
-  <div class="logo">📦</div>
-  <div>
-    <h1>Kontrol Pengiriman Sparepart</h1>
-    <p>Klik sel kolom <b>info pengiriman</b> untuk input manual · Klik baris untuk lihat detail item · Klik <b>🔗 SYNC</b> untuk tarik data dari Sindo</p>
-  </div>
-  <div class="head-badge">📅 <span id="today"></span></div>
-</div>
-
-<div class="stats">
-  <div class="stat b"><div class="lbl">Total Bukti Transaksi</div><div class="val" id="stTotal">0</div></div>
-  <div class="stat g"><div class="lbl">Total Qty</div><div class="val" id="stQty">0</div></div>
-  <div class="stat a"><div class="lbl">Status Open / Proses</div><div class="val" id="stOpen">0</div></div>
-  <div class="stat r"><div class="lbl">Kembali ke Pabrik</div><div class="val" id="stPabrik">0</div></div>
-</div>
-
-<div class="toolbar">
-  <div class="search">
-    <input type="text" id="searchInput" placeholder="Cari bukti transaksi, no resi, expedisi, part number, site...">
-  </div>
-  <select class="filter" id="siteFilter"><option value="">Semua Site</option></select>
-  <select class="filter" id="statusFilter">
-    <option value="">Semua Status</option>
-    <option>Open</option><option>Proses</option><option>Selesai</option><option>Batal</option>
-  </select>
-  <span class="proxy-status" id="proxyStatus" title="Status koneksi ke proxy server Sindo">Proxy Sindo</span>
-  <button class="btn green" id="importBtn">📥 Upload Excel</button>
-  <button class="btn excel" id="exportBtn">⬇ Download Excel</button>
-  <button class="btn ghost" id="templateBtn">📄 Template Excel</button>
-  <button class="btn primary" id="addBtn">＋ Tambah Data</button>
-</div>
-
-<div class="hint-bar">
-  <span class="icon">💡</span>
-  <span>
-    Kolom <b>NO. RESI / TRACKING EXPEDISI</b> memiliki tombol <b>🔗 SYNC</b> untuk menarik data tracking otomatis dari <b>Sindo Express</b>. Kolom lainnya bisa <b>langsung diklik &amp; diketik</b>. Tekan <b>Enter</b> simpan, <b>Esc</b> batal.
-  </span>
-</div>
-
-<div class="table-card">
-  <div class="table-wrap">
-    <table class="main-table">
-      <thead id="mainThead"></thead>
-      <tbody id="mainTbody"></tbody>
-    </table>
-  </div>
-</div>
-
-<!-- META MODAL -->
-<div class="overlay" id="metaOverlay">
-  <div class="modal medium">
-    <div class="modal-head">
-      <div>
-        <h2>✏ Edit Info Pengiriman (Form Lengkap)</h2>
-        <div class="sub">Alternatif input manual lewat form — untuk mengisi seluruh kolom info sekaligus</div>
-      </div>
-      <button class="close-x" id="metaCloseX">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="meta-banner">
-        <span class="icon">📄</span>
-        <span>Bukti Transaksi Kirim: <b id="metaKeyDisplay">-</b></span>
-      </div>
-      <form id="metaForm" class="form-grid" style="margin-top:16px" onsubmit="return false"></form>
-    </div>
-    <div class="modal-foot">
-      <div class="spacer"></div>
-      <button class="btn ghost" id="metaCancelBtn">Batal</button>
-      <button class="btn primary" id="metaSaveBtn">💾 Simpan Info</button>
-    </div>
-  </div>
-</div>
-
-<!-- DETAIL MODAL -->
-<div class="overlay" id="detailOverlay">
-  <div class="modal wide">
-    <div class="modal-head">
-      <div style="min-width:0">
-        <div class="detail-title-row">
-          <span class="key" id="detailKey">-</span>
-          <span class="count-pill" id="detailCount">0 item</span>
-        </div>
-        <div class="detail-hint">Tampilan spreadsheet — kolom <b>Nomor</b> menampilkan nomor urut baru (1, 2, 3, …)</div>
-        <div id="detailSindoBadge"></div>
-      </div>
-      <button class="close-x" id="detailCloseX">✕</button>
-    </div>
-    <div class="detail-sheet-wrap" id="detailSheetWrap">
-      <table class="detail-sheet">
-        <thead id="detailThead"></thead>
-        <tbody id="detailTbody"></tbody>
-      </table>
-    </div>
-    <div class="modal-foot">
-      <div class="detail-summary" id="detailSummary">-</div>
-      <div class="spacer"></div>
-      <button class="btn ghost" id="detailMetaBtn">✏ Edit Info Pengiriman</button>
-      <button class="btn excel" id="detailExportBtn">⬇ Download Excel Grup Ini</button>
-      <button class="btn primary" id="detailAddBtn">＋ Tambah Item</button>
-    </div>
-  </div>
-</div>
-
-<!-- FORM MODAL -->
-<div class="overlay" id="overlay">
-  <div class="modal">
-    <div class="modal-head">
-      <div>
-        <h2 id="modalTitle">Tambah Data Pengiriman</h2>
-        <div class="sub">Lengkapi data sparepart di bawah ini</div>
-      </div>
-      <button class="close-x" id="closeX">✕</button>
-    </div>
-    <div class="modal-body">
-      <form id="dataForm" class="form-grid" onsubmit="return false"></form>
-    </div>
-    <div class="modal-foot">
-      <button class="btn danger" id="deleteBtn" style="display:none">🗑 Hapus</button>
-      <div class="spacer"></div>
-      <button class="btn ghost" id="cancelBtn">Batal</button>
-      <button class="btn primary" id="saveBtn">💾 Simpan</button>
-    </div>
-  </div>
-</div>
-
-<!-- IMPORT MODAL -->
-<div class="overlay" id="importOverlay">
-  <div class="modal small">
-    <div class="modal-head">
-      <div>
-        <h2>📥 Upload Data dari Excel</h2>
-        <div class="sub">Format: .xlsx, .xls, .csv — header baris pertama harus sesuai nama kolom</div>
-      </div>
-      <button class="close-x" id="importCloseX">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="drop-zone" id="dropZone">
-        <div class="icon">📊</div>
-        <div class="ttl">Klik atau tarik file Excel ke sini</div>
-        <div class="hint">Maks 1 file · .xlsx / .xls / .csv</div>
-      </div>
-      <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none">
-
-      <div class="file-chip" id="fileChip">
-        <div class="fc-icon">📄</div>
-        <div>
-          <div class="fc-name" id="fcName">-</div>
-          <div class="fc-meta" id="fcMeta">-</div>
-        </div>
-        <button class="fc-x" id="fcRemove" title="Hapus file">✕</button>
-      </div>
-
-      <div class="opt-row">
-        <span style="font-size:12px;font-weight:700;color:#334155">Mode Import:</span>
-        <label><input type="radio" name="importMode" value="append" checked> Tambahkan ke data existing</label>
-        <label><input type="radio" name="importMode" value="replace"> Ganti semua data</label>
-      </div>
-
-      <div class="alert" id="importAlert"></div>
-
-      <div class="preview-box" id="previewBox">
-        <div class="preview-head">
-          <span>🔎 Preview Data</span>
-          <span id="previewCount" style="font-weight:600;color:#64748b">0 baris</span>
-        </div>
-        <div class="preview-scroll" id="previewScroll"></div>
-      </div>
-
-      <div id="mappingWrap" style="display:none;margin-top:14px">
-        <div style="font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">
-          Status Pemetaan Kolom
-        </div>
-        <div class="mapping-list" id="mappingList"></div>
-      </div>
-    </div>
-    <div class="modal-foot">
-      <div class="spacer"></div>
-      <button class="btn ghost" id="importCancelBtn">Batal</button>
-      <button class="btn green" id="importConfirmBtn" disabled>✓ Import Sekarang</button>
-    </div>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
-
-<script>
-/* =========================================================
-   KONFIGURASI PROXY SINDO
-   ========================================================= */
-const SINDO_PROXY_URL = 'http://localhost:3000/api/track-sindo';
-const SINDO_HEALTH_URL = 'http://localhost:3000/api/health';
-
-/* =========================================================
-   FIELD DEFINITIONS
-   ========================================================= */
-const FIELDS = [
-  { key:'nomor',                label:'Nomor',                   type:'text'   },
-  { key:'site',                 label:'Site',                    type:'text'   },
-  { key:'buktiTransaksiKirim',  label:'Bukti Transaksi Kirim',   type:'text'   },
-  { key:'tanggalReservasi',     label:'Tanggal Reservasi',       type:'date'   },
-  { key:'buktiServiceCall',     label:'Bukti Service Call',      type:'text'   },
-  { key:'buktiServiceJob',      label:'Bukti Service Job',       type:'text'   },
-  { key:'statusServiceCall',    label:'Status Service Call',     type:'select', options:['Open','Proses','Selesai','Batal'] },
-  { key:'partNumber',           label:'Part Number',             type:'text'   },
-  { key:'deskripsiPartNumber',  label:'Deskripsi Part Number',   type:'text'   },
-  { key:'qty',                  label:'Qty',                     type:'number' },
-  { key:'nomorSeriMaterial',    label:'Nomor Seri Material',     type:'text'   },
-  { key:'kembaliKePabrik',      label:'Kembali Ke Pabrik',       type:'select', options:['Ya','Tidak'] },
-  { key:'klaimKeHIT',           label:'Klaim Ke HIT',            type:'select', options:['Ya','Tidak'] },
-  { key:'lokasiReservasi',      label:'Lokasi Reservasi',        type:'text'   },
-  { key:'lokasiStok',           label:'Lokasi Stok',             type:'text'   },
-  { key:'lokasiTujuan',         label:'Lokasi Tujuan',           type:'text'   },
-  { key:'buktiReservasi',       label:'Bukti Reservasi',         type:'text'   },
-  { key:'nomorPO',              label:'Nomor PO',                type:'text'   },
-  { key:'invoiceKeHIT',         label:'Invoice Ke HIT',          type:'text'   },
-  { key:'buktiTerima',          label:'Bukti Terima',            type:'text'   },
-  { key:'analisisSA',           label:'Analisis SA',             type:'textarea' }
-];
-
-const GROUP_FIELDS = [
-  { key:'nomorSuratJalanP3',    label:'Nomor Surat Jalan ke P3',      type:'text'          },
-  { key:'dikonfirmasiTanggal',  label:'Dikonfirmasi Tanggal',         type:'date'          },
-  { key:'sjlKpgSby',            label:'Sjl KPG - SBY',                type:'text'          },
-  { key:'tglKirimKpgSby',       label:'Tgl Kirim KPG - SBY',          type:'date'          },
-  { key:'namaExpedisi',         label:'NAMA EXPEDISI',                type:'text'          },
-  { key:'noResiExpedisi',       label:'NO. RESI / TRACKING EXPEDISI', type:'text'          },
-  { key:'statusPengirimanSindo', label:'Status Pengiriman Sindo',     type:'select', options:['Dalam Perjalanan','Tiba di Tujuan','Terkirim','Gagal Kirim','Dalam Proses'] },
-  { key:'lokasiTerakhirSindo',  label:'Lokasi Terakhir Sindo',        type:'text'          },
-  { key:'updateTerakhirSindo',  label:'Update Terakhir Sindo',        type:'datetime-local'},
-  { key:'sjlSby',               label:'Sjl SBY',                      type:'text'          },
-  { key:'tglKirimSby',          label:'Tgl Kirim SBY',                type:'date'          },
-  { key:'noTrukDriver',         label:'NO TRUK | DRIVER',             type:'text'          },
-  { key:'diubahOleh',           label:'Diubah Oleh',                  type:'text'          },
-  { key:'diubahPada',           label:'Diubah Pada',                  type:'datetime-local'},
-  { key:'tcode',                label:'TCODE',                        type:'text'          }
-];
-
-const NO_BUKTI_KEY = '(Tanpa Bukti Transaksi Kirim)';
-const STORAGE_KEY  = 'kontrol_sparepart_v1';
-const META_KEY     = 'kontrol_sparepart_groupmeta_v1';
-
-/* =========================================================
-   SEED
-   ========================================================= */
-function seed(){
-  return [
-    { id:1, nomor:'1', site:'JKT-01', buktiTransaksiKirim:'KKG/KPG/SV/26/08/003', tanggalReservasi:'2024-06-03',
-      buktiServiceCall:'SC-88213', buktiServiceJob:'SJ-4421', statusServiceCall:'Selesai',
-      partNumber:'PN-AX4510', deskripsiPartNumber:'Fan Cooling Unit 24V', qty:'2',
-      nomorSeriMaterial:'SN-778112', kembaliKePabrik:'Tidak', klaimKeHIT:'Ya',
-      lokasiReservasi:'Gudang Jakarta', lokasiStok:'Rak A-12', lokasiTujuan:'Site JKT-01',
-      buktiReservasi:'RSV-0091', nomorPO:'PO-4500123', invoiceKeHIT:'INV-HIT-0098',
-      buktiTerima:'BA-2201', analisisSA:'Kerusakan bearing, diganti unit baru' },
-    { id:2, nomor:'2', site:'JKT-01', buktiTransaksiKirim:'KKG/KPG/SV/26/08/003', tanggalReservasi:'2024-06-03',
-      buktiServiceCall:'SC-88213', buktiServiceJob:'SJ-4421', statusServiceCall:'Selesai',
-      partNumber:'PN-BX2201', deskripsiPartNumber:'Hydraulic Hose Assembly', qty:'3',
-      nomorSeriMaterial:'SN-990233', kembaliKePabrik:'Tidak', klaimKeHIT:'Ya',
-      lokasiReservasi:'Gudang Jakarta', lokasiStok:'Rak C-04', lokasiTujuan:'Site JKT-01',
-      buktiReservasi:'RSV-0091', nomorPO:'PO-4500123', invoiceKeHIT:'INV-HIT-0098',
-      buktiTerima:'BA-2201', analisisSA:'Hose bocor, diganti baru' },
-    { id:3, nomor:'3', site:'JKT-01', buktiTransaksiKirim:'KKG/KPG/SV/26/08/003', tanggalReservasi:'2024-06-03',
-      buktiServiceCall:'SC-88213', buktiServiceJob:'SJ-4421', statusServiceCall:'Selesai',
-      partNumber:'PN-CZ7788', deskripsiPartNumber:'Control Valve Solenoid', qty:'1',
-      nomorSeriMaterial:'SN-334901', kembaliKePabrik:'Ya', klaimKeHIT:'Ya',
-      lokasiReservasi:'Gudang Jakarta', lokasiStok:'Rak B-07', lokasiTujuan:'Site JKT-01',
-      buktiReservasi:'RSV-0091', nomorPO:'PO-4500123', invoiceKeHIT:'INV-HIT-0098',
-      buktiTerima:'BA-2201', analisisSA:'Solenoid mati total' },
-    { id:4, nomor:'4', site:'SBY-02', buktiTransaksiKirim:'TRX-2024-0012', tanggalReservasi:'2024-06-07',
-      buktiServiceCall:'SC-88240', buktiServiceJob:'SJ-4430', statusServiceCall:'Proses',
-      partNumber:'PN-DX1122', deskripsiPartNumber:'Drive Belt V-Type', qty:'4',
-      nomorSeriMaterial:'SN-551010', kembaliKePabrik:'Ya', klaimKeHIT:'Ya',
-      lokasiReservasi:'Gudang Surabaya', lokasiStok:'Rak D-01', lokasiTujuan:'Site SBY-02',
-      buktiReservasi:'RSV-0098', nomorPO:'PO-4500141', invoiceKeHIT:'-',
-      buktiTerima:'-', analisisSA:'Menunggu analisa dari pabrik' },
-    { id:5, nomor:'5', site:'MDN-03', buktiTransaksiKirim:'TRX-2024-0013', tanggalReservasi:'2024-06-11',
-      buktiServiceCall:'SC-88255', buktiServiceJob:'SJ-4455', statusServiceCall:'Open',
-      partNumber:'PN-EY3344', deskripsiPartNumber:'Sensor Tekanan Oli', qty:'2',
-      nomorSeriMaterial:'SN-221188', kembaliKePabrik:'Tidak', klaimKeHIT:'Tidak',
-      lokasiReservasi:'Gudang Medan', lokasiStok:'Rak B-09', lokasiTujuan:'Site MDN-03',
-      buktiReservasi:'RSV-0102', nomorPO:'PO-4500155', invoiceKeHIT:'-',
-      buktiTerima:'-', analisisSA:'-' }
-  ];
-}
-
-function seedMeta(){
-  return {
-    'KKG/KPG/SV/26/08/003': {
-      nomorSuratJalanP3:'SJ-P3-2024-08-0031',
-      dikonfirmasiTanggal:'2024-06-03',
-      sjlKpgSby:'SJL/KPG-SBY/06/0031',
-      tglKirimKpgSby:'2024-06-04',
-      namaExpedisi:'JNE Express',
-      noResiExpedisi:'JNE-88231-00921',
-      statusPengirimanSindo:'Terkirim',
-      lokasiTerakhirSindo:'Jakarta Selatan',
-      updateTerakhirSindo:'2024-06-05T10:30',
-      sjlSby:'SJL/SBY-KDS/06/0044',
-      tglKirimSby:'2024-06-05',
-      noTrukDriver:'B 9021 XYZ | Pak Budi',
-      diubahOleh:'admin_jkt',
-      diubahPada:'2024-06-03T14:30',
-      tcode:'TCODE-KPG-001'
-    },
-    'TRX-2024-0012': {
-      nomorSuratJalanP3:'SJ-P3-2024-06-0012',
-      dikonfirmasiTanggal:'2024-06-07',
-      sjlKpgSby:'SJL/KPG-SBY/06/0012',
-      tglKirimKpgSby:'2024-06-08',
-      namaExpedisi:'SiCepat',
-      noResiExpedisi:'SCP-009923',
-      statusPengirimanSindo:'Dalam Perjalanan',
-      lokasiTerakhirSindo:'Surabaya',
-      updateTerakhirSindo:'2024-06-09T08:15',
-      sjlSby:'',
-      tglKirimSby:'',
-      noTrukDriver:'',
-      diubahOleh:'admin_sby',
-      diubahPada:'2024-06-07T09:15',
-      tcode:'TCODE-SBY-014'
-    }
-  };
-}
-
-/* =========================================================
-   STATE
-   ========================================================= */
-let data = [];
-let groupMeta = {};
-let editingId = null;
-let currentDetailKey = null;
-let currentMetaKey = null;
-let importRows = [];
-let importMapping = {};
-let importMetaMap = {};
-
-const $   = s => document.querySelector(s);
-const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-
-function toast(msg){
-  const t = $('#toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(t._tm);
-  t._tm = setTimeout(()=>t.classList.remove('show'), 2200);
-}
-
-function loadData(){
-  try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    data = raw ? JSON.parse(raw) : seed();
-  }catch(e){ data = seed(); }
-}
-function saveData(){
-  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }catch(e){}
-}
-function loadMeta(){
-  try{
-    const raw = localStorage.getItem(META_KEY);
-    groupMeta = raw ? JSON.parse(raw) : seedMeta();
-  }catch(e){ groupMeta = seedMeta(); }
-}
-function saveMeta(){
-  try{ localStorage.setItem(META_KEY, JSON.stringify(groupMeta)); }catch(e){}
-}
-
-/* =========================================================
-   GROUPING
-   ========================================================= */
-function groupKey(d){
-  const v = String(d.buktiTransaksiKirim || '').trim();
-  return v || NO_BUKTI_KEY;
-}
-function getMeta(key){
-  return groupMeta[key] || {};
-}
-function setMeta(key, obj){
-  groupMeta[key] = obj;
-  saveMeta();
-}
-
-function getFilteredData(){
-  const q      = $('#searchInput').value.trim().toLowerCase();
-  const site   = $('#siteFilter').value;
-  const status = $('#statusFilter').value;
-
-  return data.filter(d=>{
-    if(site   && (d.site || '') !== site) return false;
-    if(status && (d.statusServiceCall || '') !== status) return false;
-    if(q){
-      const hitRow = FIELDS.some(f => String(d[f.key] ?? '').toLowerCase().includes(q));
-      const meta = getMeta(groupKey(d));
-      const hitMeta = GROUP_FIELDS.some(f => String(meta[f.key] ?? '').toLowerCase().includes(q));
-      return hitRow || hitMeta;
-    }
-    return true;
-  });
-}
-function getGroups(){
-  const filtered = getFilteredData();
-  const map = new Map();
-  filtered.forEach(d=>{
-    const k = groupKey(d);
-    if(!map.has(k)) map.set(k, []);
-    map.get(k).push(d);
-  });
-  return map;
-}
-
-/* =========================================================
-   MAIN TABLE HEADER
-   ========================================================= */
-function buildMainHead(){
-  const th = [
-    '<th style="min-width:240px">Bukti Transaksi Kirim</th>',
-    ...GROUP_FIELDS.map(f=>{
-      if(f.key === 'noResiExpedisi'){
-        return `<th class="input-col">${esc(f.label)} <span style="font-size:9px;opacity:.85">🔗 SYNC</span></th>`;
-      }
-      return `<th class="input-col">${esc(f.label)}</th>`;
-    }),
-    '<th style="text-align:center">Item</th>',
-    '<th class="aksi-col">Aksi</th>'
-  ].join('');
-  $('#mainThead').innerHTML = `<tr>${th}</tr>`;
-}
-
-/* =========================================================
-   RENDER MAIN TABLE
-   ========================================================= */
-function renderTable(){
-  const groups = getGroups();
-  const tbody  = $('#mainTbody');
-  const totalCols = 1 + GROUP_FIELDS.length + 2;
-
-  if(groups.size === 0){
-    const anyData = data.length > 0;
-    tbody.innerHTML = `<tr><td colspan="${totalCols}">
-      <div class="empty"><div class="big">${anyData ? '🔎' : '📭'}</div>
-      <div>${anyData
-        ? 'Tidak ada data yang cocok dengan pencarian / filter.'
-        : 'Belum ada data. Klik <b>＋ Tambah Data</b> atau <b>📥 Upload Excel</b> untuk mulai.'}</div>
-      </div>
-    </td></tr>`;
-  }else{
-    const entries = [...groups.entries()].sort((a,b)=> a[0].localeCompare(b[0]));
-    tbody.innerHTML = entries.map(([key, items])=>{
-      const meta = getMeta(key);
-      const totalQty = items.reduce((a,d)=> a + (parseInt(d.qty)||0), 0);
-      const sites = [...new Set(items.map(d=>d.site).filter(Boolean))].join(', ') || '-';
-
-      const metaCells = GROUP_FIELDS.map(f=>{
-        const raw = meta[f.key] ?? '';
-        let display;
-        if(raw === ''){
-          display = `<span class="meta-empty">—</span>`;
-        }else if(f.type === 'datetime-local'){
-          display = esc(String(raw).replace('T',' '));
-        }else if(f.key === 'statusPengirimanSindo'){
-          const cls = String(raw).toLowerCase().replace(/\s+/g,'');
-          display = `<span class="pill ${cls}">${esc(raw)}</span>`;
-        }else{
-          display = esc(raw);
-        }
-
-        /* Khusus kolom No. Resi: tambahkan tombol Sync */
-        if(f.key === 'noResiExpedisi'){
-          const hasResi = raw && String(raw).trim() !== '';
-          return `<td class="editable-cell no-resi-cell"
-                      data-key="${esc(key)}"
-                      data-field="${f.key}"
-                      data-type="${f.type}"
-                      title="Klik area teks untuk edit, klik 🔗 SYNC untuk tarik data dari Sindo">
-            <div class="no-resi-wrapper">
-              <span class="no-resi-display">${display}</span>
-              <button class="sync-btn"
-                      data-key="${esc(key)}"
-                      ${hasResi ? '' : 'disabled'}
-                      title="${hasResi ? 'Sync tracking dari Sindo Express' : 'Isi Nomor Resi terlebih dahulu'}">
-                🔗 SYNC
-              </button>
+    <!-- ===== HEADER ===== -->
+    <header class="header">
+        <div class="container header-container">
+            <div class="logo" onclick="location.reload()">
+                <div class="logo-icon"><i class="fas fa-truck-fast"></i></div>
+                <div class="logo-text">
+                    <span class="logo-main">SINDO</span>
+                    <span class="logo-sub">Express</span>
+                </div>
             </div>
-          </td>`;
-        }
-
-        return `<td class="editable-cell${f.key==='tcode'?' tcode-cell':''}"
-                    data-key="${esc(key)}"
-                    data-field="${f.key}"
-                    data-type="${f.type}"
-                    title="Klik untuk input manual">${display}</td>`;
-      }).join('');
-
-      return `<tr data-key="${esc(key)}">
-        <td>
-          <div class="btk-cell">
-            <div class="btk-icon">📄</div>
-            <div>
-              <div class="btk-text">${esc(key)}</div>
-              <div class="btk-sub">Site: ${esc(sites)}</div>
+            <nav class="nav-menu" id="navMenu">
+                <a href="#"><i class="fas fa-home"></i> Beranda</a>
+                <a href="#"><i class="fas fa-box"></i> Layanan</a>
+                <a href="#" class="active"><i class="fas fa-search-location"></i> Tracking</a>
+                <a href="#"><i class="fas fa-headset"></i> Kontak</a>
+            </nav>
+            <div class="header-actions">
+                <button class="btn-theme" id="themeToggle" title="Ganti Tema">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <button class="btn-menu" id="menuToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
             </div>
-          </div>
-        </td>
-        ${metaCells}
-        <td class="item-cell"><span class="item-badge">${items.length} item · Qty ${totalQty}</span></td>
-        <td class="aksi-col">
-          <button class="btn-icon meta-btn" data-key="${esc(key)}" title="Form lengkap info pengiriman">✏ Form</button>
-          <button class="btn-icon view-btn" data-key="${esc(key)}" title="Lihat detail item">👁 Detail</button>
-        </td>
-      </tr>`;
-    }).join('');
+        </div>
+    </header>
 
-    /* Event: klik baris → buka detail */
-    tbody.querySelectorAll('tr[data-key]').forEach(tr=>{
-      tr.addEventListener('click', (e)=>{
-        if(e.target.closest('.editable-cell')) return;
-        if(e.target.closest('.btn-icon')) return;
-        if(e.target.closest('.sync-btn')) return;
-        openDetail(tr.dataset.key);
-      });
-    });
+    <!-- ===== HERO / FORM ===== -->
+    <section class="hero">
+        <div class="hero-bg"></div>
+        <div class="container hero-content">
+            <div class="hero-text">
+                <span class="hero-badge"><i class="fas fa-shield-alt"></i> Aman & Terpercaya</span>
+                <h1>Lacak Paket <span>SINDO Express</span> Anda</h1>
+                <p>Masukkan nomor resi untuk melihat status pengiriman secara real-time</p>
+            </div>
 
-    /* Event: tombol Form */
-    tbody.querySelectorAll('.meta-btn').forEach(b=>{
-      b.addEventListener('click', e=>{
-        e.stopPropagation();
-        openMetaModal(b.dataset.key);
-      });
-    });
+            <div class="tracking-form-wrapper">
+                <div class="tracking-form">
+                    <div class="input-group">
+                        <i class="fas fa-barcode input-icon"></i>
+                        <input 
+                            type="text" 
+                            id="trackingNumber" 
+                            placeholder="Masukkan Nomor Resi..." 
+                            autocomplete="off"
+                            maxlength="30"
+                            spellcheck="false">
+                        <button id="clearBtn" class="btn-clear" style="display:none;" title="Hapus">
+                            <i class="fas fa-times-circle"></i>
+                        </button>
+                        <button id="trackBtn" class="btn-track">
+                            <i class="fas fa-search"></i>
+                            <span>Lacak</span>
+                        </button>
+                    </div>
+                    <div class="error-message" id="errorMessage"></div>
+                    
+                    <div class="quick-samples">
+                        <span>Contoh:</span>
+                        <button class="sample-chip" data-resi="SN123456789">SN123456789</button>
+                        <button class="sample-chip" data-resi="SN987654321">SN987654321</button>
+                        <button class="sample-chip" data-resi="SN555777999">SN555777999</button>
+                    </div>
+                </div>
+            </div>
 
-    /* Event: tombol Detail */
-    tbody.querySelectorAll('.view-btn').forEach(b=>{
-      b.addEventListener('click', e=>{
-        e.stopPropagation();
-        openDetail(b.dataset.key);
-      });
-    });
+            <!-- Riwayat Pencarian -->
+            <div class="history-wrapper" id="historyWrapper" style="display:none;">
+                <div class="history-header">
+                    <span><i class="fas fa-history"></i> Riwayat Pencarian</span>
+                    <button id="clearHistory" class="btn-link">Hapus Semua</button>
+                </div>
+                <div class="history-list" id="historyList"></div>
+            </div>
+        </div>
+    </section>
 
-    /* Event: klik editable-cell */
-    tbody.querySelectorAll('.editable-cell').forEach(td=>{
-      td.addEventListener('click', e=>{
-        if(e.target.closest('.sync-btn')) return;
-        e.stopPropagation();
-        startEditCell(td);
-      });
-    });
+    <!-- ===== LOADING ===== -->
+    <div class="loading-wrapper" id="loadingWrapper" style="display:none;">
+        <div class="container">
+            <div class="loading-box">
+                <div class="spinner"></div>
+                <p>Sedang mencari paket Anda...</p>
+            </div>
+        </div>
+    </div>
 
-    /* Event: tombol SYNC */
-    tbody.querySelectorAll('.sync-btn').forEach(btn=>{
-      btn.addEventListener('click', async e=>{
-        e.stopPropagation();
-        e.preventDefault();
+    <!-- ===== HASIL TRACKING ===== -->
+    <section class="tracking-result" id="trackingResult" style="display: none;">
+        <div class="container">
+            <div class="result-header">
+                <div>
+                    <h2><i class="fas fa-box-open"></i> Detail Pengiriman</h2>
+                    <p class="result-subtitle">Informasi lengkap status paket Anda</p>
+                </div>
+                <div class="result-actions">
+                    <button class="btn-action" id="copyBtn" title="Salin Resi">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                    <button class="btn-action" id="printBtn" title="Cetak">
+                        <i class="fas fa-print"></i>
+                    </button>
+                    <button class="btn-action" id="shareBtn" title="Bagikan">
+                        <i class="fas fa-share-alt"></i>
+                    </button>
+                    <button class="btn-action btn-close-action" id="closeResult" title="Tutup">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
 
-        const key = btn.dataset.key;
-        const meta = getMeta(key);
-        const noResi = String(meta.noResiExpedisi || '').trim();
+            <div class="status-banner" id="statusBanner">
+                <div class="status-icon">
+                    <i class="fas fa-truck"></i>
+                </div>
+                <div class="status-text">
+                    <span class="status-label">Status Saat Ini</span>
+                    <span class="status-value" id="statusBannerText">-</span>
+                </div>
+                <div class="status-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <span class="progress-text" id="progressText">0%</span>
+                </div>
+            </div>
 
-        if(!noResi){
-          toast('⚠️ Isi Nomor Resi terlebih dahulu');
-          return;
-        }
+            <div class="result-info">
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-barcode"></i></div>
+                        <div class="info-content">
+                            <span class="label">Nomor Resi</span>
+                            <span class="value" id="resNumber">-</span>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-user"></i></div>
+                        <div class="info-content">
+                            <span class="label">Pengirim</span>
+                            <span class="value" id="resSender">-</span>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-user-check"></i></div>
+                        <div class="info-content">
+                            <span class="label">Penerima</span>
+                            <span class="value" id="resReceiver">-</span>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-map-marker-alt"></i></div>
+                        <div class="info-content">
+                            <span class="label">Kota Asal</span>
+                            <span class="value" id="resOrigin">-</span>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-flag-checkered"></i></div>
+                        <div class="info-content">
+                            <span class="label">Kota Tujuan</span>
+                            <span class="value" id="resDestination">-</span>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-calendar-alt"></i></div>
+                        <div class="info-content">
+                            <span class="label">Tanggal Kirim</span>
+                            <span class="value" id="resDate">-</span>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-clock"></i></div>
+                        <div class="info-content">
+                            <span class="label">Estimasi Tiba</span>
+                            <span class="value" id="resEta">-</span>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-weight-hanging"></i></div>
+                        <div class="info-content">
+                            <span class="label">Berat</span>
+                            <span class="value" id="resWeight">-</span>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-cube"></i></div>
+                        <div class="info-content">
+                            <span class="label">Jenis Layanan</span>
+                            <span class="value" id="resService">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-        await syncTrackingForGroup(key, noResi, btn);
-      });
-    });
-  }
-  updateStats();
-  refreshSiteFilter();
-}
+            <div class="timeline-wrapper">
+                <h3><i class="fas fa-route"></i> Riwayat Perjalanan Paket</h3>
+                <div class="timeline" id="timeline"></div>
+            </div>
 
-/* =========================================================
-   INLINE CELL EDIT
-   ========================================================= */
-function startEditCell(td){
-  if(td.classList.contains('editing')) return;
+            <div class="help-box">
+                <i class="fas fa-headset"></i>
+                <div>
+                    <strong>Butuh bantuan?</strong>
+                    <p>Hubungi Customer Service SINDO Express di <a href="tel:0315910758">(031) 5910758</a></p>
+                </div>
+            </div>
+        </div>
+    </section>
 
-  const key      = td.dataset.key;
-  const fieldKey = td.dataset.field;
-  const type     = td.dataset.type;
-  const fieldDef = GROUP_FIELDS.find(f => f.key === fieldKey);
-  const meta     = getMeta(key);
-  const curVal   = meta[fieldKey] || '';
-  const prevHtml = td.innerHTML;
+    <!-- ===== FOOTER ===== -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <div class="logo">
+                        <div class="logo-icon"><i class="fas fa-truck-fast"></i></div>
+                        <div class="logo-text">
+                            <span class="logo-main">SINDO</span>
+                            <span class="logo-sub">Express</span>
+                        </div>
+                    </div>
+                    <p>Selalu Ada - Melayani pengiriman ke seluruh Indonesia dengan aman, cepat, dan terpercaya.</p>
+                    <div class="social-links">
+                        <a href="#" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" title="Instagram"><i class="fab fa-instagram"></i></a>
+                        <a href="#" title="Twitter"><i class="fab fa-twitter"></i></a>
+                        <a href="#" title="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+                    </div>
+                </div>
+                <div class="footer-links">
+                    <h4>Layanan</h4>
+                    <a href="#"><i class="fas fa-angle-right"></i> Pengiriman Darat</a>
+                    <a href="#"><i class="fas fa-angle-right"></i> Pengiriman Laut</a>
+                    <a href="#"><i class="fas fa-angle-right"></i> Pengiriman Udara</a>
+                    <a href="#"><i class="fas fa-angle-right"></i> Cargo</a>
+                </div>
+                <div class="footer-links">
+                    <h4>Perusahaan</h4>
+                    <a href="#"><i class="fas fa-angle-right"></i> Tentang Kami</a>
+                    <a href="#"><i class="fas fa-angle-right"></i> Karier</a>
+                    <a href="#"><i class="fas fa-angle-right"></i> Cabang</a>
+                    <a href="#"><i class="fas fa-angle-right"></i> Kerjasama</a>
+                </div>
+                <div class="footer-contact">
+                    <h4>Hubungi Kami</h4>
+                    <p><i class="fas fa-map-marker-alt"></i> Jl. Kedungdoro No.60, Surabaya</p>
+                    <p><i class="fas fa-phone"></i> (031) 5910758</p>
+                    <p><i class="fas fa-envelope"></i> info@ptsindo.com</p>
+                    <p><i class="fas fa-clock"></i> Senin - Sabtu: 08.00 - 17.00</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>Copyright © <span id="year"></span> by Sindo Express. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
 
-  let inputType = 'text';
-  if(type === 'date') inputType = 'date';
-  else if(type === 'datetime-local') inputType = 'datetime-local';
-  else if(type === 'number') inputType = 'number';
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <i class="fas fa-check-circle"></i>
+        <span id="toastMessage">Berhasil</span>
+    </div>
 
-  /* Field select → dropdown */
-  if(type === 'select'){
-    const options = (fieldDef?.options) || [];
-    td.classList.add('editing');
-    td.innerHTML = `<select class="cell-input">
-      <option value="">-- Pilih --</option>
-      ${options.map(opt => `<option value="${esc(opt)}" ${opt === curVal ? 'selected' : ''}>${esc(opt)}</option>`).join('')}
-    </select>`;
-    const sel = td.querySelector('select');
-    sel.focus();
-
-    const finishSelect = (save) => {
-      td.classList.remove('editing');
-      if(save){
-        const newVal = sel.value;
-        const m = getMeta(key);
-        if(newVal === ''){ delete m[fieldKey]; }
-        else{ m[fieldKey] = newVal; }
-        setMeta(key, m);
-        let disp;
-        if(newVal === '') disp = '<span class="meta-empty">—</span>';
-        else if(fieldKey === 'statusPengirimanSindo'){
-          const cls = newVal.toLowerCase().replace(/\s+/g,'');
-          disp = `<span class="pill ${cls}">${esc(newVal)}</span>`;
-        } else {
-          disp = esc(newVal);
-        }
-        td.innerHTML = disp;
-        toast('💾 Tersimpan');
-      } else {
-        td.innerHTML = prevHtml;
-      }
-    };
-    sel.addEventListener('keydown', ev => {
-      if(ev.key === 'Enter'){ ev.preventDefault(); finishSelect(true); }
-      else if(ev.key === 'Escape'){ ev.preventDefault(); finishSelect(false); }
-      else if(ev.key === 'Tab'){ finishSelect(true); }
-    });
-    sel.addEventListener('blur', () => { if(td.classList.contains('editing')) finishSelect(true); });
-    sel.addEventListener('click', ev => ev.stopPropagation());
-    return;
-  }
-
-  td.classList.add('editing');
-  td.innerHTML = `<input class="cell-input" type="${inputType}" value="${esc(curVal)}"
-                        placeholder="Ketik ${esc(fieldDef?.label || fieldKey)}...">`;
-
-  const inp = td.querySelector('input');
-  inp.focus();
-  try{ inp.select(); }catch(e){}
-
-  const finish = (save)=>{
-    td.classList.remove('editing');
-    if(save){
-      const newVal = inp.value.trim();
-      const m = getMeta(key);
-      if(newVal === ''){
-        delete m[fieldKey];
-      }else{
-        m[fieldKey] = newVal;
-      }
-      setMeta(key, m);
-
-      let disp;
-      if(newVal === '') disp = '<span class="meta-empty">—</span>';
-      else if(type === 'datetime-local') disp = esc(String(newVal).replace('T',' '));
-      else disp = esc(newVal);
-
-      /* Khusus noResi: re-render tombol SYNC */
-      if(fieldKey === 'noResiExpedisi'){
-        const hasResi = newVal !== '';
-        td.innerHTML = `<div class="no-resi-wrapper">
-          <span class="no-resi-display">${disp}</span>
-          <button class="sync-btn" data-key="${esc(key)}" ${hasResi ? '' : 'disabled'}
-                  title="${hasResi ? 'Sync tracking dari Sindo Express' : 'Isi Nomor Resi terlebih dahulu'}">🔗 SYNC</button>
-        </div>`;
-        /* Pasang ulang event listener tombol SYNC */
-        const newBtn = td.querySelector('.sync-btn');
-        newBtn.addEventListener('click', async ev=>{
-          ev.stopPropagation(); ev.preventDefault();
-          const m2 = getMeta(key);
-          const nr = String(m2.noResiExpedisi || '').trim();
-          if(!nr){ toast('⚠️ Isi Nomor Resi terlebih dahulu'); return; }
-          await syncTrackingForGroup(key, nr, newBtn);
-        });
-      } else {
-        td.innerHTML = disp;
-      }
-
-      toast('💾 Tersimpan');
-    }else{
-      td.innerHTML = prevHtml;
-    }
-  };
-
-  inp.addEventListener('keydown', ev=>{
-    if(ev.key === 'Enter'){ ev.preventDefault(); finish(true); }
-    else if(ev.key === 'Escape'){ ev.preventDefault(); finish(false); }
-    else if(ev.key === 'Tab'){ finish(true); }
-  });
-  inp.addEventListener('blur', ()=>{
-    if(td.classList.contains('editing')) finish(true);
-  });
-  inp.addEventListener('click', ev=> ev.stopPropagation());
-}
-
-/* =========================================================
-   STATS & FILTER
-   ========================================================= */
-function updateStats(){
-  const filtered = getFilteredData();
-  const groups   = getGroups();
-  $('#stTotal').textContent = groups.size;
-  $('#stQty').textContent   = filtered.reduce((a,d)=> a + (parseInt(d.qty)||0), 0);
-  $('#stOpen').textContent  = filtered.filter(d=>['Open','Proses'].includes(d.statusServiceCall)).length;
-  $('#stPabrik').textContent= filtered.filter(d=>d.kembaliKePabrik === 'Ya').length;
-}
-function refreshSiteFilter(){
-  const sel = $('#siteFilter');
-  const cur = sel.value;
-  const sites = [...new Set(data.map(d=>d.site).filter(Boolean))].sort();
-  sel.innerHTML = '<option value="">Semua Site</option>' +
-    sites.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');
-  if(sites.includes(cur)) sel.value = cur;
-}
-
-/* =========================================================
-   META MODAL
-   ========================================================= */
-function buildMetaForm(){
-  $('#metaForm').innerHTML = GROUP_FIELDS.map(f=>{
-    let input;
-    if(f.type === 'select'){
-      input = `<select name="${f.key}"><option value="">-- Pilih --</option>
-        ${(f.options||[]).map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('')}</select>`;
-    }else if(f.type === 'textarea'){
-      input = `<textarea name="${f.key}" placeholder="${esc(f.label)}"></textarea>`;
-    }else{
-      input = `<input type="${f.type}" name="${f.key}" placeholder="${esc(f.label)}">`;
-    }
-    return `<div class="field"><label>${esc(f.label)}</label>${input}</div>`;
-  }).join('');
-}
-function openMetaModal(key){
-  currentMetaKey = key;
-  $('#metaKeyDisplay').textContent = key;
-  const form = $('#metaForm');
-  form.reset();
-  const meta = getMeta(key);
-  GROUP_FIELDS.forEach(f=>{
-    const el = form.elements[f.key];
-    if(el) el.value = meta[f.key] ?? '';
-  });
-  $('#metaOverlay').classList.add('show');
-  setTimeout(()=>{ const el = form.elements['nomorSuratJalanP3']; if(el) el.focus(); }, 80);
-}
-function closeMetaModal(){
-  $('#metaOverlay').classList.remove('show');
-  currentMetaKey = null;
-}
-function saveMetaRecord(){
-  if(!currentMetaKey) return;
-  const form = $('#metaForm');
-  const obj = {};
-  GROUP_FIELDS.forEach(f=>{
-    const el = form.elements[f.key];
-    obj[f.key] = el ? el.value.trim() : '';
-  });
-  setMeta(currentMetaKey, obj);
-  renderTable();
-  closeMetaModal();
-  toast('✅ Info pengiriman disimpan');
-}
-
-/* =========================================================
-   DETAIL MODAL
-   ========================================================= */
-function openDetail(key){
-  currentDetailKey = key;
-  renderDetail();
-  $('#detailOverlay').classList.add('show');
-  const wrap = $('#detailSheetWrap');
-  if(wrap) wrap.scrollLeft = 0;
-}
-function closeDetail(){
-  $('#detailOverlay').classList.remove('show');
-  currentDetailKey = null;
-  const badge = document.getElementById('detailSindoBadge');
-  if(badge) badge.innerHTML = '';
-}
-function renderDetail(){
-  if(!currentDetailKey) return;
-  const items = data.filter(d => groupKey(d) === currentDetailKey);
-
-  $('#detailKey').textContent = currentDetailKey;
-  $('#detailCount').textContent = items.length + ' item';
-
-  /* Badge status Sindo di header */
-  const metaGrup = getMeta(currentDetailKey);
-  const statusSindo = metaGrup.statusPengirimanSindo;
-  const lokasiSindo = metaGrup.lokasiTerakhirSindo;
-  const updateSindo = metaGrup.updateTerakhirSindo;
-  const badge = document.getElementById('detailSindoBadge');
-  if(badge){
-    if(statusSindo){
-      const cls = statusSindo.toLowerCase().replace(/\s+/g,'');
-      badge.innerHTML = `
-        <span class="pill ${cls}" style="margin-right:8px">${esc(statusSindo)}</span>
-        ${lokasiSindo ? '📍 ' + esc(lokasiSindo) : ''}
-        ${updateSindo ? ' · 🕒 ' + esc(String(updateSindo).replace('T',' ')) : ''}
-      `;
-    } else {
-      badge.innerHTML = '';
-    }
-  }
-
-  $('#detailThead').innerHTML =
-    '<tr>' + FIELDS.map(f=>`<th>${esc(f.label)}</th>`).join('') +
-    '<th class="col-aksi">Aksi</th></tr>';
-
-  if(items.length === 0){
-    $('#detailTbody').innerHTML =
-      `<tr><td colspan="${FIELDS.length + 1}"
-        style="padding:40px;text-align:center;color:#64748b">
-        Tidak ada item pada bukti transaksi ini.</td></tr>`;
-    $('#detailSummary').innerHTML = '-';
-    return;
-  }
-
-  $('#detailTbody').innerHTML = items.map((d, idx)=>{
-    const tds = FIELDS.map(f=>{
-      const v = d[f.key] ?? '';
-      if(f.key === 'nomor'){
-        return `<td class="qty-cell" style="color:#2563eb;font-weight:700">${idx + 1}</td>`;
-      }
-      if(f.key === 'statusServiceCall'){
-        const cls = String(v).toLowerCase();
-        return `<td><span class="pill ${cls}">${esc(v || '-')}</span></td>`;
-      }
-      if(f.key === 'kembaliKePabrik' || f.key === 'klaimKeHIT'){
-        const cls = String(v).toLowerCase() === 'ya' ? 'ya' : 'tidak';
-        return `<td><span class="yn ${cls}">${esc(v || '-')}</span></td>`;
-      }
-      if(f.key === 'qty') return `<td class="qty-cell">${esc(v || '0')}</td>`;
-      if(f.key === 'partNumber') return `<td class="pn-cell">${esc(v || '-')}</td>`;
-      if(f.key === 'nomorPO') return `<td class="po-cell">${esc(v || '-')}</td>`;
-      if(f.key === 'deskripsiPartNumber') return `<td class="desc-cell" title="${esc(v)}">${esc(v || '-')}</td>`;
-      if(f.key === 'analisisSA') return `<td class="ana-cell" title="${esc(v)}">${esc(v || '-')}</td>`;
-      return `<td>${esc(v === '' ? '-' : v)}</td>`;
-    }).join('');
-
-    return `<tr data-id="${d.id}">${tds}
-      <td class="col-aksi">
-        <button class="btn-icon edit-btn" data-id="${d.id}">✏ Edit</button>
-        <button class="btn-icon danger del-btn" data-id="${d.id}">🗑 Hapus</button>
-      </td></tr>`;
-  }).join('');
-
-  $('#detailTbody').querySelectorAll('.edit-btn').forEach(b=>{
-    b.addEventListener('click', e=>{
-      e.stopPropagation();
-      const id = Number(b.dataset.id);
-      closeDetail();
-      openModal(id);
-    });
-  });
-  $('#detailTbody').querySelectorAll('.del-btn').forEach(b=>{
-    b.addEventListener('click', e=>{
-      e.stopPropagation();
-      const id = Number(b.dataset.id);
-      const rec = data.find(x=>x.id===id);
-      if(!rec) return;
-      if(!confirm(`Hapus item "${rec.partNumber}"?`)) return;
-      data = data.filter(x=>x.id !== id);
-      saveData();
-      renderTable();
-      if(data.filter(d=>groupKey(d)===currentDetailKey).length === 0){
-        closeDetail();
-        toast('🗑 Item dihapus — grup kosong, kembali ke daftar');
-      }else{
-        renderDetail();
-        toast('🗑 Item dihapus');
-      }
-    });
-  });
-
-  const totalQty = items.reduce((a,d)=> a + (parseInt(d.qty)||0), 0);
-  $('#detailSummary').innerHTML = `Total <b>${items.length}</b> item · <b>${totalQty}</b> qty`;
-}
-
-/* =========================================================
-   FORM RECORD ITEM
-   ========================================================= */
-function buildForm(){
-  $('#dataForm').innerHTML = FIELDS.map(f=>{
-    const wide = (f.type === 'textarea') ? ' full' : '';
-    let input;
-    if(f.type === 'select'){
-      input = `<select name="${f.key}">
-        <option value="">-- Pilih --</option>
-        ${f.options.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('')}
-      </select>`;
-    }else if(f.type === 'textarea'){
-      input = `<textarea name="${f.key}" placeholder="Catatan analisis SA..."></textarea>`;
-    }else{
-      input = `<input type="${f.type}" name="${f.key}" placeholder="${esc(f.label)}">`;
-    }
-    return `<div class="field${wide}"><label>${esc(f.label)}</label>${input}</div>`;
-  }).join('');
-}
-
-function openModal(id = null, preset = null){
-  editingId = id;
-  const form = $('#dataForm');
-  form.reset();
-
-  if(id === null){
-    $('#modalTitle').textContent = 'Tambah Data Pengiriman';
-    $('#deleteBtn').style.display = 'none';
-    const maxNo = data.reduce((m,d)=> Math.max(m, parseInt(d.nomor)||0), 0);
-    form.elements['nomor'].value = String(maxNo + 1);
-    if(preset && preset.buktiTransaksiKirim){
-      form.elements['buktiTransaksiKirim'].value = preset.buktiTransaksiKirim;
-    }
-  }else{
-    $('#modalTitle').textContent = 'Edit Data Pengiriman';
-    $('#deleteBtn').style.display = 'inline-flex';
-    const d = data.find(x=>x.id === id);
-    if(!d) return;
-    FIELDS.forEach(f=>{
-      const el = form.elements[f.key];
-      if(el) el.value = d[f.key] ?? '';
-    });
-  }
-  $('#overlay').classList.add('show');
-  setTimeout(()=>{ const el = form.elements['site']; if(el) el.focus(); }, 80);
-}
-function closeModal(){
-  $('#overlay').classList.remove('show');
-  editingId = null;
-}
-function saveRecord(){
-  const form = $('#dataForm');
-  const obj = {};
-  FIELDS.forEach(f=>{
-    const el = form.elements[f.key];
-    obj[f.key] = el ? el.value.trim() : '';
-  });
-  if(!obj.site){ toast('⚠️ Site wajib diisi'); form.elements['site'].focus(); return; }
-  if(!obj.partNumber){ toast('⚠️ Part Number wajib diisi'); form.elements['partNumber'].focus(); return; }
-
-  if(editingId === null){
-    const newId = data.length ? Math.max(...data.map(d=>d.id)) + 1 : 1;
-    obj.id = newId;
-    if(!obj.nomor) obj.nomor = String(newId);
-    data.push(obj);
-    toast('✅ Data berhasil ditambahkan');
-  }else{
-    const idx = data.findIndex(d=>d.id === editingId);
-    obj.id = editingId;
-    data[idx] = obj;
-    toast('✅ Data berhasil diperbarui');
-  }
-  saveData();
-  renderTable();
-  closeModal();
-}
-function deleteRecord(){
-  if(editingId === null) return;
-  const d = data.find(x=>x.id === editingId);
-  if(!confirm(`Hapus data pengiriman "${d.partNumber}" (${d.site})?`)) return;
-  data = data.filter(x=>x.id !== editingId);
-  saveData();
-  renderTable();
-  closeModal();
-  toast('🗑 Data dihapus');
-}
-
-/* =========================================================
-   EXCEL EXPORT
-   ========================================================= */
-function getExportFields(){
-  const out = [];
-  FIELDS.forEach(f => out.push(f));
-  GROUP_FIELDS.forEach(gf => out.push({ ...gf, isMeta:true }));
-  return out;
-}
-
-function recordToLabeled(d){
-  const meta = getMeta(groupKey(d));
-  const o = {};
-  getExportFields().forEach(f=>{
-    let v;
-    if(f.isMeta){
-      v = meta[f.key] ?? '';
-      if(f.type === 'datetime-local' && v) v = String(v).replace('T',' ');
-    }else{
-      v = d[f.key] ?? '';
-      if(f.key === 'tanggalReservasi' && v){
-        const dt = new Date(v);
-        if(!isNaN(dt)) v = dt.toISOString().slice(0,10);
-      }
-    }
-    o[f.label] = v;
-  });
-  return o;
-}
-function autoWidths(rows, headers){
-  return headers.map(h=>{
-    const maxLen = Math.max(
-      String(h).length,
-      ...rows.map(r => String(r[h] ?? '').length)
-    );
-    return { wch: Math.min(Math.max(maxLen + 2, 10), 45) };
-  });
-}
-function exportExcel(){
-  const filtered = getFilteredData();
-  if(!filtered.length){ toast('⚠️ Tidak ada data untuk di-export'); return; }
-
-  const headers = getExportFields().map(f=>f.label);
-  const rows = filtered.map(recordToLabeled);
-
-  const ws = XLSX.utils.json_to_sheet(rows, { header: headers });
-  ws['!cols'] = autoWidths(rows, headers);
-  ws['!autofilter'] = { ref: XLSX.utils.encode_range({
-    s:{r:0,c:0}, e:{r:rows.length, c:headers.length-1}
-  })};
-
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Data Sparepart');
-
-  const info = [
-    ['Laporan', 'Kontrol Pengiriman Sparepart'],
-    ['Tanggal Export', new Date().toLocaleString('id-ID')],
-    ['Total Baris', filtered.length],
-    ['Total Qty', filtered.reduce((a,d)=> a + (parseInt(d.qty)||0), 0)],
-    ['Total Grup Bukti Transaksi', new Set(filtered.map(groupKey)).size],
-    ['Filter Site', $('#siteFilter').value || 'Semua'],
-    ['Filter Status', $('#statusFilter').value || 'Semua'],
-    ['Kata Kunci', $('#searchInput').value.trim() || '-'],
-    [''],
-    ['Catatan', 'Kolom info pengiriman berada di paling kanan (setelah Analisis SA)']
-  ];
-  const wsInfo = XLSX.utils.aoa_to_sheet(info);
-  wsInfo['!cols'] = [{wch:26},{wch:56}];
-  XLSX.utils.book_append_sheet(wb, wsInfo, 'Info');
-
-  const tgl = new Date().toISOString().slice(0,10);
-  XLSX.writeFile(wb, `kontrol-pengiriman-sparepart-${tgl}.xlsx`);
-  toast('⬇ File Excel berhasil diunduh');
-}
-
-function exportGroupExcel(){
-  if(!currentDetailKey) return;
-  const items = data.filter(d => groupKey(d) === currentDetailKey);
-  if(!items.length){ toast('⚠️ Tidak ada data pada grup ini'); return; }
-
-  const headers = getExportFields().map(f=>f.label);
-  const rows = items.map((d, idx)=>{
-    const o = recordToLabeled(d);
-    o['Nomor'] = idx + 1;
-    return o;
-  });
-
-  const ws = XLSX.utils.json_to_sheet(rows, { header: headers });
-  ws['!cols'] = autoWidths(rows, headers);
-  ws['!autofilter'] = { ref: XLSX.utils.encode_range({
-    s:{r:0,c:0}, e:{r:rows.length, c:headers.length-1}
-  })};
-
-  const wb = XLSX.utils.book_new();
-  let sheetName = String(currentDetailKey).replace(/[\\\/\?\*\[\]:]/g,'-').slice(0,31);
-  if(!sheetName) sheetName = 'Detail';
-  XLSX.utils.book_append_sheet(wb, ws, sheetName);
-
-  const safeFile = String(currentDetailKey).replace(/[\\\/\?\*\[\]:]/g,'-');
-  XLSX.writeFile(wb, `sparepart-${safeFile}.xlsx`);
-  toast('⬇ File Excel grup berhasil diunduh');
-}
-
-function downloadTemplateExcel(){
-  const allFields = getExportFields();
-  const headers = allFields.map(f=>f.label);
-  const example = {};
-  allFields.forEach(f=>{
-    const k = f.key;
-    if(k === 'nomor') example[f.label] = 1;
-    else if(k === 'site') example[f.label] = 'JKT-01';
-    else if(k === 'buktiTransaksiKirim') example[f.label] = 'KKG/KPG/SV/26/08/003';
-    else if(k === 'nomorSuratJalanP3') example[f.label] = 'SJ-P3-2024-08-0031';
-    else if(k === 'dikonfirmasiTanggal') example[f.label] = '2024-06-03';
-    else if(k === 'sjlKpgSby') example[f.label] = 'SJL/KPG-SBY/06/0031';
-    else if(k === 'tglKirimKpgSby') example[f.label] = '2024-06-04';
-    else if(k === 'namaExpedisi') example[f.label] = 'JNE Express';
-    else if(k === 'noResiExpedisi') example[f.label] = 'JNE-88231-00921';
-    else if(k === 'statusPengirimanSindo') example[f.label] = 'Terkirim';
-    else if(k === 'lokasiTerakhirSindo') example[f.label] = 'Jakarta Selatan';
-    else if(k === 'updateTerakhirSindo') example[f.label] = '2024-06-05 10:30';
-    else if(k === 'sjlSby') example[f.label] = 'SJL/SBY-KDS/06/0044';
-    else if(k === 'tglKirimSby') example[f.label] = '2024-06-05';
-    else if(k === 'noTrukDriver') example[f.label] = 'B 9021 XYZ | Pak Budi';
-    else if(k === 'diubahOleh') example[f.label] = 'admin_jkt';
-    else if(k === 'diubahPada') example[f.label] = '2024-06-03 14:30';
-    else if(k === 'tcode') example[f.label] = 'TCODE-KPG-001';
-    else if(k === 'statusServiceCall') example[f.label] = 'Open';
-    else if(k === 'kembaliKePabrik' || k === 'klaimKeHIT') example[f.label] = 'Tidak';
-    else if(k === 'qty') example[f.label] = 1;
-    else if(k === 'tanggalReservasi') example[f.label] = new Date().toISOString().slice(0,10);
-    else example[f.label] = '';
-  });
-
-  const ws = XLSX.utils.json_to_sheet([example], { header: headers });
-  ws['!cols'] = autoWidths([example], headers);
-
-  const guide = [
-    ['PETUNJUK PENGGUNAAN TEMPLATE'],
-    [''],
-    ['1. Isi data mulai dari baris ke-2 (baris ke-1 adalah header).'],
-    ['2. Jangan mengubah nama kolom pada baris pertama.'],
-    ['3. Kolom "Bukti Transaksi Kirim" berfungsi sebagai kunci pengelompokan.'],
-    ['4. Kolom INFO PENGIRIMAN ada di PALING KANAN (setelah Analisis SA):'],
-    ['   Nomor Surat Jalan ke P3 s/d TCODE — berlaku PER GRUP Bukti Transaksi Kirim.'],
-    ['   Cukup isi di salah satu baris, sistem memakai nilai pertama non-kosong.'],
-    ['5. Format tanggal: YYYY-MM-DD. Untuk "Diubah Pada": YYYY-MM-DD HH:MM.'],
-    [''],
-    ['Daftar Kolom (urutan di file Excel):'],
-    ...headers.map((h,i)=>[`${i+1}. ${h}`])
-  ];
-  const wsGuide = XLSX.utils.aoa_to_sheet(guide);
-  wsGuide['!cols'] = [{wch:60}];
-
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Template');
-  XLSX.utils.book_append_sheet(wb, wsGuide, 'Petunjuk');
-
-  XLSX.writeFile(wb, 'template-upload-sparepart.xlsx');
-  toast('📄 Template Excel berhasil diunduh');
-}
-
-/* =========================================================
-   IMPORT EXCEL
-   ========================================================= */
-function norm(str){
-  return String(str || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-}
-
-const HEADER_ALIASES = {
-  nomor:               ['nomor','no','nomer','nomorurut','no.','no'],
-  site:                ['site','sitelokasi','lokasisite','lokasi'],
-  buktiTransaksiKirim: ['buktitransaksikirim','buktikirim','buktitransaksi','transactionproof','nobuktikirim','nobukti'],
-  tanggalReservasi:    ['tanggalreservasi','tglreservasi','tglresv','reservationdate'],
-  buktiServiceCall:    ['buktiservicecall','servicecall','sc','bukti_sc'],
-  buktiServiceJob:     ['buktiservicejob','servicejob','sj','bukti_sj'],
-  statusServiceCall:   ['statusservicecall','statussc','status','statuscall'],
-  partNumber:          ['partnumber','partno','partnum','pn','part_number','kodebarang','kode_part'],
-  deskripsiPartNumber: ['deskripsipartnumber','deskripsi','description','namapart','namabarang','deskripsipart'],
-  qty:                 ['qty','quantity','jumlah','kuantitas','jml'],
-  nomorSeriMaterial:   ['nomorserimaterial','nomorseri','serialnumber','serialno','sn','nomor_seri','noseri'],
-  kembaliKePabrik:     ['kembalikepabrik','kembalipabrik','returpabrik','retur','returnpabrik'],
-  klaimKeHIT:          ['klaimkeh','klaimkehit','klaim','claimhit','claim'],
-  lokasiReservasi:     ['lokasireservasi','lokreservasi','lokresv','reservasilokasi'],
-  lokasiStok:          ['lokasistok','lokstok','lokasigudang','gudang','rak'],
-  lokasiTujuan:        ['lokasitujuan','loktujuan','tujuan','destination','lokasikirim'],
-  buktiReservasi:      ['buktireservasi','bukti_reservasi','reservationproof','reservasibukti'],
-  nomorPO:             ['nomorpo','nopo','no_po','po','purchaseorder'],
-  invoiceKeHIT:        ['invoicekeh','invoicekehit','invoice','invoicehit'],
-  buktiTerima:         ['bukti terima','bukti_terima','buktiterima','terima','penerimaan','bast','ba'],
-  analisisSA:          ['analisissa','analisis','analisysa','catatan','keterangan','note']
-};
-
-const META_ALIASES = {
-  nomorSuratJalanP3:   ['nomorsuratjalanp3','nomorsuratjalan kep3','nomorsuratjalan',
-                        'nosuratjalanp3','nosj','nosuratjalan','suratjalan','nomorsj'],
-  dikonfirmasiTanggal: ['dikonfirmasitanggal','tglkonfirmasi','tanggaldikonfirmasi'],
-  sjlKpgSby:           ['sjlkpgsby','sjlkpg-sby','suratjalankpgsby','sjlkpgsby',
-                        'sjl_kpg_sby','suratjalan_kpg_sby'],
-  tglKirimKpgSby:      ['tglkirimkpgsby','tglkirimkpg-sby','tanggal kirim kpg sby','tgl_kirim_kpg_sby'],
-  namaExpedisi:        ['namaexpedisi','expedisi','ekspedisi','kurir'],
-  noResiExpedisi:      ['no resi / tracking expedisi','no resi expedisi','noresiexpedisi',
-                        'noresi','nomeresi','no_resi','resi','notracking','nomeresi',
-                        'no tracking expedisi','noresi/trackingexpedisi'],
-  statusPengirimanSindo: ['statuspengiriman','statussindo','statuspengirimansindo','status'],
-  lokasiTerakhirSindo: ['lokasiterakhir','lokasiterakhirsindo','lokasiterakhirs'],
-  updateTerakhirSindo: ['updateterakhir','updateterakhirsindo','update'],
-  sjlSby:              ['sjlsby','sjl_sby','suratjalansby','suratjalan_sby'],
-  tglKirimSby:         ['tglkirimsby','tgl_kirim_sby','tanggal kirim sby'],
-  noTrukDriver:        ['no truk | driver','notrukdriver','notruk|driver','notruk','nodriver',
-                        'nopol','nopol|driver','notruk_driver'],
-  diubahOleh:          ['diubaholeh','diubah_oleh','editor','modifiedby'],
-  diubahPada:          ['diubahpada','diubah_pada','modifiedat','tanggalubah'],
-  tcode:               ['tcode','t_code','kodetransaksi']
-};
-
-function mapHeaders(headers){
-  const map = {};
-  const used = new Set();
-  headers.forEach((h, idx)=>{
-    const n = norm(h);
-    if(!n) return;
-    for(const f of FIELDS){
-      if(used.has(f.key)) continue;
-      const aliases = HEADER_ALIASES[f.key] || [];
-      if(aliases.some(a => norm(a) === n)){ map[f.key] = idx; used.add(f.key); return; }
-    }
-    for(const f of FIELDS){
-      if(used.has(f.key)) continue;
-      if(norm(f.label) === n){ map[f.key] = idx; used.add(f.key); return; }
-    }
-  });
-  return map;
-}
-function mapMetaHeaders(headers){
-  const map = {};
-  const used = new Set();
-  headers.forEach((h, idx)=>{
-    const n = norm(h);
-    if(!n) return;
-    for(const f of GROUP_FIELDS){
-      if(used.has(f.key)) continue;
-      const aliases = META_ALIASES[f.key] || [];
-      if(aliases.some(a => norm(a) === n)){ map[f.key] = idx; used.add(f.key); return; }
-    }
-    for(const f of GROUP_FIELDS){
-      if(used.has(f.key)) continue;
-      if(norm(f.label) === n){ map[f.key] = idx; used.add(f.key); return; }
-    }
-  });
-  return map;
-}
-
-function openImportModal(){
-  importRows = [];
-  importMapping = {};
-  importMetaMap = {};
-  $('#fileInput').value = '';
-  $('#fileChip').classList.remove('show');
-  $('#previewBox').classList.remove('show');
-  $('#mappingWrap').style.display = 'none';
-  $('#importAlert').classList.remove('show');
-  $('#importConfirmBtn').disabled = true;
-  document.querySelector('input[name="importMode"][value="append"]').checked = true;
-  $('#importOverlay').classList.add('show');
-}
-function closeImportModal(){
-  $('#importOverlay').classList.remove('show');
-}
-function handleFile(file){
-  if(!file){ return; }
-  const ext = file.name.split('.').pop().toLowerCase();
-  if(!['xlsx','xls','csv'].includes(ext)){
-    showAlert('Format file tidak didukung. Gunakan .xlsx, .xls, atau .csv', 'err');
-    return;
-  }
-  $('#fcName').textContent = file.name;
-  $('#fcMeta').textContent = (file.size/1024).toFixed(1) + ' KB · membaca...';
-  $('#fileChip').classList.add('show');
-
-  const reader = new FileReader();
-  reader.onload = e=>{
-    try{
-      const wb = XLSX.read(e.target.result, {type:'binary', cellDates:true, dateNF:'yyyy-mm-dd'});
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const json = XLSX.utils.sheet_to_json(ws, {defval:'', raw:false});
-      if(!json.length){
-        showAlert('File kosong atau tidak ada baris data.', 'err');
-        $('#fcMeta').textContent = '0 baris';
-        $('#importConfirmBtn').disabled = true;
-        return;
-      }
-      const headers = Object.keys(json[0]);
-      importMapping = mapHeaders(headers);
-      const metaMap = mapMetaHeaders(headers);
-
-      importRows = json.map((row, i)=>{
-        const obj = {};
-        FIELDS.forEach(f=>{
-          const colIdx = importMapping[f.key];
-          if(colIdx === undefined){ obj[f.key] = ''; }
-          else{
-            let v = row[headers[colIdx]];
-            if(v instanceof Date) v = v.toISOString().slice(0,10);
-            obj[f.key] = v === null || v === undefined ? '' : String(v).trim();
-          }
-        });
-        if(!obj.nomor) obj.nomor = String(i+1);
-
-        const gk = groupKey(obj);
-        if(gk && gk !== NO_BUKTI_KEY){
-          if(!importMetaMap[gk]) importMetaMap[gk] = {};
-          GROUP_FIELDS.forEach(f=>{
-            const cIdx = metaMap[f.key];
-            if(cIdx === undefined) return;
-            let v = row[headers[cIdx]];
-            if(v instanceof Date){
-              if(f.type === 'datetime-local'){
-                const pad = n => String(n).padStart(2,'0');
-                v = `${v.getFullYear()}-${pad(v.getMonth()+1)}-${pad(v.getDate())}T${pad(v.getHours())}:${pad(v.getMinutes())}`;
-              }else{
-                v = v.toISOString().slice(0,10);
-              }
+    <script>
+        /* ========== DATA DUMMY TRACKING ========== */
+        const dummyTrackingData = {
+            'SN123456789': {
+                resNumber: 'SN123456789',
+                status: 'Dalam Perjalanan',
+                statusClass: 'transit',
+                progress: 65,
+                sender: 'Toko Online ABC',
+                receiver: 'Budi Santoso',
+                origin: 'Jakarta',
+                destination: 'Surabaya',
+                date: '15 Januari 2025',
+                eta: '18 Januari 2025',
+                weight: '2.5 kg',
+                service: 'Reguler Darat',
+                timeline: [
+                    { time: '15 Jan 2025, 08:00', title: 'Paket Dijemput', desc: 'Kurir menjemput paket di Jakarta', status: 'done' },
+                    { time: '15 Jan 2025, 14:30', title: 'Masuk Gudang Jakarta', desc: 'Paket diterima di gudang sortir Jakarta', status: 'done' },
+                    { time: '16 Jan 2025, 09:15', title: 'Transit di Semarang', desc: 'Paket sedang dalam perjalanan menuju Surabaya', status: 'done' },
+                    { time: '17 Jan 2025, 06:00', title: 'Tiba di Gudang Surabaya', desc: 'Paket tiba di gudang sortir Surabaya', status: 'active' },
+                    { time: 'Estimasi 18 Jan 2025', title: 'Dalam Pengiriman', desc: 'Paket akan segera diantar ke alamat tujuan', status: 'pending' },
+                    { time: 'Estimasi 18 Jan 2025', title: 'Terkirim', desc: 'Paket diterima oleh penerima', status: 'pending' }
+                ]
+            },
+            'SN987654321': {
+                resNumber: 'SN987654321',
+                status: 'Terkirim',
+                statusClass: 'delivered',
+                progress: 100,
+                sender: 'PT Maju Jaya',
+                receiver: 'Siti Aminah',
+                origin: 'Bandung',
+                destination: 'Yogyakarta',
+                date: '10 Januari 2025',
+                eta: '13 Januari 2025',
+                weight: '5 kg',
+                service: 'Express Udara',
+                timeline: [
+                    { time: '10 Jan 2025, 07:30', title: 'Paket Dijemput', desc: 'Kurir menjemput paket di Bandung', status: 'done' },
+                    { time: '10 Jan 2025, 13:00', title: 'Masuk Gudang Bandung', desc: 'Paket diterima di gudang sortir Bandung', status: 'done' },
+                    { time: '11 Jan 2025, 10:00', title: 'Transit di Purwokerto', desc: 'Paket transit di Purwokerto', status: 'done' },
+                    { time: '12 Jan 2025, 08:00', title: 'Tiba di Yogyakarta', desc: 'Paket tiba di gudang Yogyakarta', status: 'done' },
+                    { time: '13 Jan 2025, 10:30', title: 'Dalam Pengiriman', desc: 'Paket sedang diantar oleh kurir', status: 'done' },
+                    { time: '13 Jan 2025, 14:00', title: 'Terkirim', desc: 'Paket diterima oleh Siti Aminah', status: 'done' }
+                ]
+            },
+            'SN555777999': {
+                resNumber: 'SN555777999',
+                status: 'Menunggu Pickup',
+                statusClass: 'pending',
+                progress: 15,
+                sender: 'CV Karya Mandiri',
+                receiver: 'Andi Pratama',
+                origin: 'Medan',
+                destination: 'Makassar',
+                date: '18 Januari 2025',
+                eta: '22 Januari 2025',
+                weight: '1.2 kg',
+                service: 'Reguler Laut',
+                timeline: [
+                    { time: '18 Jan 2025, 10:00', title: 'Pesanan Dibuat', desc: 'Data pengiriman telah diterima sistem', status: 'done' },
+                    { time: '18 Jan 2025, 13:00', title: 'Menunggu Penjemputan', desc: 'Paket akan dijemput oleh kurir', status: 'active' },
+                    { time: 'Estimasi 19 Jan 2025', title: 'Paket Dijemput', desc: 'Kurir akan menjemput paket', status: 'pending' },
+                    { time: 'Estimasi 20 Jan 2025', title: 'Masuk Gudang Medan', desc: 'Paket masuk gudang sortir Medan', status: 'pending' },
+                    { time: 'Estimasi 22 Jan 2025', title: 'Terkirim', desc: 'Paket diterima oleh penerima', status: 'pending' }
+                ]
             }
-            v = (v === null || v === undefined) ? '' : String(v).trim();
-            if(v && !importMetaMap[gk][f.key]) importMetaMap[gk][f.key] = v;
-          });
+        };
+
+        /* ========== ELEMEN DOM ========== */
+        const trackBtn = document.getElementById('trackBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const trackingNumberInput = document.getElementById('trackingNumber');
+        const trackingResult = document.getElementById('trackingResult');
+        const loadingWrapper = document.getElementById('loadingWrapper');
+        const errorMessage = document.getElementById('errorMessage');
+        const closeResultBtn = document.getElementById('closeResult');
+        const copyBtn = document.getElementById('copyBtn');
+        const printBtn = document.getElementById('printBtn');
+        const shareBtn = document.getElementById('shareBtn');
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toastMessage');
+        const themeToggle = document.getElementById('themeToggle');
+        const menuToggle = document.getElementById('menuToggle');
+        const navMenu = document.getElementById('navMenu');
+        const historyWrapper = document.getElementById('historyWrapper');
+        const historyList = document.getElementById('historyList');
+        const clearHistory = document.getElementById('clearHistory');
+
+        /* ========== STATE ========== */
+        const STORAGE_KEY = 'sindo_tracking_history';
+        const THEME_KEY = 'sindo_theme';
+
+        /* ========== INIT ========== */
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('year').textContent = new Date().getFullYear();
+
+            const savedTheme = localStorage.getItem(THEME_KEY);
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark-mode');
+                themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+            }
+
+            loadHistory();
+
+            trackBtn.addEventListener('click', handleTrack);
+            clearBtn.addEventListener('click', clearInput);
+            trackingNumberInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') handleTrack();
+            });
+            trackingNumberInput.addEventListener('input', function() {
+                clearBtn.style.display = this.value ? 'block' : 'none';
+                errorMessage.textContent = '';
+            });
+
+            closeResultBtn.addEventListener('click', function() {
+                trackingResult.style.display = 'none';
+                trackingNumberInput.value = '';
+                clearBtn.style.display = 'none';
+                errorMessage.textContent = '';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+
+            copyBtn.addEventListener('click', copyResi);
+            printBtn.addEventListener('click', () => window.print());
+            shareBtn.addEventListener('click', shareTracking);
+            themeToggle.addEventListener('click', toggleTheme);
+            menuToggle.addEventListener('click', () => navMenu.classList.toggle('open'));
+            clearHistory.addEventListener('click', clearAllHistory);
+
+            document.querySelectorAll('.sample-chip').forEach(chip => {
+                chip.addEventListener('click', function() {
+                    trackingNumberInput.value = this.dataset.resi;
+                    clearBtn.style.display = 'block';
+                    handleTrack();
+                });
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!navMenu.contains(e.target) && !menuToggle.contains(e.target)) {
+                    navMenu.classList.remove('open');
+                }
+            });
+        });
+
+        /* ========== FUNGSI TRACKING ========== */
+        function handleTrack() {
+            const inputValue = trackingNumberInput.value.trim().toUpperCase();
+            errorMessage.textContent = '';
+
+            if (!inputValue) {
+                errorMessage.textContent = '⚠️ Silakan masukkan nomor resi terlebih dahulu.';
+                trackingNumberInput.focus();
+                return;
+            }
+
+            if (inputValue.length < 6) {
+                errorMessage.textContent = '⚠️ Nomor resi minimal 6 karakter.';
+                return;
+            }
+
+            trackingResult.style.display = 'none';
+            loadingWrapper.style.display = 'block';
+            trackBtn.classList.add('loading');
+
+            loadingWrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            setTimeout(() => {
+                loadingWrapper.style.display = 'none';
+                trackBtn.classList.remove('loading');
+
+                const data = dummyTrackingData[inputValue];
+
+                if (!data) {
+                    errorMessage.textContent = '❌ Nomor resi tidak ditemukan. Coba contoh: SN123456789';
+                    showToast('Nomor resi tidak ditemukan', 'error');
+                    return;
+                }
+
+                saveToHistory(inputValue);
+                displayResult(data);
+                showToast('Data paket berhasil dimuat', 'success');
+            }, 1200);
         }
-        return obj;
-      });
 
-      $('#fcMeta').textContent = (file.size/1024).toFixed(1) + ' KB · ' + importRows.length + ' baris siap diimport';
-      renderImportPreview(headers);
-      renderMappingStatus(metaMap);
+        /* ========== TAMPILKAN HASIL ========== */
+        function displayResult(data) {
+            document.getElementById('resNumber').textContent = data.resNumber;
+            document.getElementById('resSender').textContent = data.sender;
+            document.getElementById('resReceiver').textContent = data.receiver;
+            document.getElementById('resOrigin').textContent = data.origin;
+            document.getElementById('resDestination').textContent = data.destination;
+            document.getElementById('resDate').textContent = data.date;
+            document.getElementById('resEta').textContent = data.eta;
+            document.getElementById('resWeight').textContent = data.weight;
+            document.getElementById('resService').textContent = data.service;
 
-      const hasBTK  = importMapping.buktiTransaksiKirim !== undefined;
-      const hasSite = importMapping.site !== undefined;
-      const hasPart = importMapping.partNumber !== undefined;
+            const bannerText = document.getElementById('statusBannerText');
+            bannerText.textContent = data.status;
 
-      if(!hasBTK){
-        showAlert('Kolom "Bukti Transaksi Kirim" tidak ditemukan. Semua baris masuk ke grup "(Tanpa Bukti Transaksi Kirim)".', 'warn');
-        $('#importConfirmBtn').disabled = false;
-      }else if(!hasSite && !hasPart){
-        showAlert('Kolom "Site" dan "Part Number" tidak ditemukan. Periksa nama kolom pada file Excel.', 'err');
-        $('#importConfirmBtn').disabled = true;
-      }else{
-        showAlert('✓ File berhasil dibaca. Periksa preview lalu klik "Import Sekarang".', 'info');
-        $('#importConfirmBtn').disabled = false;
-      }
-    }catch(err){
-      console.error(err);
-      showAlert('Gagal membaca file: ' + err.message, 'err');
-      $('#importConfirmBtn').disabled = true;
-    }
-  };
-  reader.readAsBinaryString(file);
-}
-function showAlert(msg, type){
-  const el = $('#importAlert');
-  el.className = 'alert show ' + (type || 'info');
-  el.textContent = msg;
-}
-function renderImportPreview(headers){
-  const previewKeys = ['nomor','buktiTransaksiKirim','nomorSuratJalanP3','sjlKpgSby','namaExpedisi','noResiExpedisi',
-                       'statusPengirimanSindo','lokasiTerakhirSindo',
-                       'sjlSby','noTrukDriver',
-                       'site','partNumber','qty','statusServiceCall'];
-  const allIdx = { ...importMapping, ...mapMetaHeaders(headers) };
-  const cols = previewKeys.filter(k => allIdx[k] !== undefined);
-  const useCols = cols.length ? cols : FIELDS.slice(0,6).map(f=>f.key);
+            const statusIcon = document.querySelector('.status-icon i');
+            if (data.statusClass === 'delivered') {
+                statusIcon.className = 'fas fa-check-circle';
+            } else if (data.statusClass === 'transit') {
+                statusIcon.className = 'fas fa-truck';
+            } else {
+                statusIcon.className = 'fas fa-clock';
+            }
 
-  $('#previewCount').textContent = importRows.length + ' baris';
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            progressFill.style.width = '0%';
+            progressText.textContent = '0%';
+            
+            setTimeout(() => {
+                progressFill.style.width = data.progress + '%';
+                progressText.textContent = data.progress + '%';
+            }, 100);
 
-  let html = '<table><thead><tr>';
-  html += useCols.map(k=>{
-    const f = FIELDS.find(x=>x.key===k) || GROUP_FIELDS.find(x=>x.key===k);
-    return `<th>${esc(f ? f.label : k)}</th>`;
-  }).join('');
-  html += '</tr></thead><tbody>';
+            const timelineContainer = document.getElementById('timeline');
+            timelineContainer.innerHTML = '';
 
-  importRows.slice(0, 8).forEach(r=>{
-    const gk = groupKey(r);
-    const meta = importMetaMap[gk] || {};
-    html += '<tr>' + useCols.map(k=>{
-      let v;
-      if(GROUP_FIELDS.some(gf=>gf.key===k)){
-        v = meta[k] ?? '';
-      }else{
-        v = r[k] ?? '';
-      }
-      return `<td>${esc(v === '' ? '-' : v)}</td>`;
-    }).join('') + '</tr>';
-  });
-  html += '</tbody></table>';
+            data.timeline.forEach(function(item, index) {
+                const timelineItem = document.createElement('div');
+                timelineItem.className = 'timeline-item';
+                
+                if (item.status === 'done') {
+                    timelineItem.classList.add('done');
+                } else if (item.status === 'active') {
+                    timelineItem.classList.add('active');
+                }
 
-  if(importRows.length > 8){
-    html += `<div style="padding:8px 14px;font-size:11px;color:#64748b;background:#f8fafc;border-top:1px solid #e2e8f0">
-      ... dan ${importRows.length - 8} baris lainnya</div>`;
-  }
-  $('#previewScroll').innerHTML = html;
-  $('#previewBox').classList.add('show');
-}
-function renderMappingStatus(metaMap){
-  const metaMapFinal = metaMap || mapMetaHeaders([]);
-  const listMain = FIELDS.map(f=>{
-    const ok = importMapping[f.key] !== undefined;
-    return `<span class="map-tag ${ok ? '' : 'miss'}">${ok ? '✓' : '○'} ${esc(f.label)}</span>`;
-  }).join('');
-  const listMeta = GROUP_FIELDS.map(f=>{
-    const ok = metaMapFinal[f.key] !== undefined;
-    return `<span class="map-tag ${ok ? 'meta' : 'miss'}">${ok ? '✓' : '○'} ${esc(f.label)}</span>`;
-  }).join('');
-  $('#mappingList').innerHTML = listMain + listMeta;
-  $('#mappingWrap').style.display = 'block';
-}
-function confirmImport(){
-  if(!importRows.length){ return; }
-  const mode = document.querySelector('input[name="importMode"]:checked').value;
-  const baseId = data.length ? Math.max(...data.map(d=>d.id)) : 0;
-  const newRecords = importRows.map((r, i)=>({ ...r, id: baseId + i + 1 }));
+                const timeIcon = item.status === 'done' ? 'fa-check' : 
+                                item.status === 'active' ? 'fa-spinner fa-spin' : 'fa-hourglass-half';
 
-  if(mode === 'replace'){
-    if(!confirm(`Ganti SEMUA data existing (${data.length} baris) dengan ${newRecords.length} baris dari file?`)) return;
-    data = newRecords;
-    groupMeta = { ...importMetaMap };
-    saveMeta();
-    toast(`✓ Import selesai — ${newRecords.length} baris (mode: ganti semua)`);
-  }else{
-    data = data.concat(newRecords);
-    Object.keys(importMetaMap).forEach(k=>{
-      groupMeta[k] = { ...(groupMeta[k]||{}), ...importMetaMap[k] };
-    });
-    saveMeta();
-    toast(`✓ Import selesai — ${newRecords.length} baris ditambahkan`);
-  }
-  saveData();
-  renderTable();
-  closeImportModal();
-}
+                timelineItem.innerHTML = `
+                    <div class="timeline-time">
+                        <i class="fas ${timeIcon}"></i>
+                        ${item.time}
+                    </div>
+                    <div class="timeline-title">${item.title}</div>
+                    <div class="timeline-desc">${item.desc}</div>
+                `;
 
-/* =========================================================
-   SINDO SYNC — FUNGSI UTAMA
-   ========================================================= */
-async function fetchTrackingSindo(noResi){
-  if(!noResi || noResi.trim() === ''){
-    throw new Error('Nomor resi kosong');
-  }
-  const resp = await fetch(SINDO_PROXY_URL, {
-    method : 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body   : JSON.stringify({ noResi: noResi.trim() })
-  });
-  const result = await resp.json();
-  if(!resp.ok || !result.success){
-    throw new Error(result.error || 'Gagal melacak resi');
-  }
-  return result.data;
-}
+                timelineContainer.appendChild(timelineItem);
 
-async function syncTrackingForGroup(groupKeyValue, noResi, btn){
-  const originalHTML = btn.innerHTML;
-  btn.disabled = true;
-  btn.classList.remove('success','error');
-  btn.classList.add('loading');
-  btn.innerHTML = '⏳ Loading...';
+                timelineItem.style.opacity = '0';
+                timelineItem.style.transform = 'translateX(-20px)';
+                setTimeout(() => {
+                    timelineItem.style.transition = 'all 0.4s ease';
+                    timelineItem.style.opacity = '1';
+                    timelineItem.style.transform = 'translateX(0)';
+                }, index * 100);
+            });
 
-  try{
-    const tracking = await fetchTrackingSindo(noResi);
+            trackingResult.style.display = 'block';
 
-    /* Update meta grup */
-    const meta = getMeta(groupKeyValue);
+            setTimeout(() => {
+                trackingResult.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 200);
+        }
 
-    if(tracking.status){
-      /* Normalisasi status agar masuk ke salah satu pill class */
-      let st = String(tracking.status).trim();
-      /* Contoh: "DELIVERED" → "Terkirim" */
-      const stLow = st.toLowerCase();
-      if(/deliver|terkirim|received|diterima/.test(stLow))         st = 'Terkirim';
-      else if(/transit|perjalanan|on\s*process|process/.test(stLow)) st = 'Dalam Perjalanan';
-      else if(/tiba|arrived/.test(stLow))                          st = 'Tiba di Tujuan';
-      else if(/gagal|fail|return/.test(stLow))                     st = 'Gagal Kirim';
-      meta.statusPengirimanSindo = st;
-    }
-    if(tracking.lokasi)     meta.lokasiTerakhirSindo = tracking.lokasi;
-    if(tracking.tanggalISO) meta.updateTerakhirSindo = tracking.tanggalISO;
-    else if(tracking.tanggal) meta.updateTerakhirSindo = tracking.tanggal;
+        /* ========== RIWAYAT PENCARIAN ========== */
+        function saveToHistory(resi) {
+            let history = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            history = history.filter(item => item !== resi);
+            history.unshift(resi);
+            history = history.slice(0, 5);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+            renderHistory();
+        }
 
-    /* Update juga expedisi jika ada */
-    if(tracking.kurir && !meta.namaExpedisi){
-      meta.namaExpedisi = tracking.kurir;
-    }
+        function loadHistory() {
+            renderHistory();
+        }
 
-    setMeta(groupKeyValue, meta);
-    renderTable();
+        function renderHistory() {
+            const history = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
 
-    /* Feedback visual */
-    btn.classList.remove('loading');
-    btn.classList.add('success');
-    btn.innerHTML = '✅ OK';
-    setTimeout(()=>{
-      btn.classList.remove('success');
-      btn.innerHTML = originalHTML;
-      btn.disabled = false;
-    }, 2000);
+            if (history.length === 0) {
+                historyWrapper.style.display = 'none';
+                return;
+            }
 
-    toast('✅ Tracking berhasil disinkronkan');
+            historyWrapper.style.display = 'block';
+            historyList.innerHTML = '';
 
-    /* Tampilkan modal detail */
-    showSindoTrackingModal(groupKeyValue, tracking);
+            history.forEach(resi => {
+                const item = document.createElement('div');
+                item.className = 'history-item';
+                item.innerHTML = `<i class="fas fa-history"></i> ${resi}`;
+                item.addEventListener('click', function() {
+                    trackingNumberInput.value = resi;
+                    clearBtn.style.display = 'block';
+                    handleTrack();
+                });
+                historyList.appendChild(item);
+            });
+        }
 
-  }catch(err){
-    console.error('Sync error:', err);
-    btn.classList.remove('loading');
-    btn.classList.add('error');
-    btn.innerHTML = '❌ Gagal';
-    setTimeout(()=>{
-      btn.classList.remove('error');
-      btn.innerHTML = originalHTML;
-      btn.disabled = false;
-    }, 2500);
-    toast('❌ Sync gagal: ' + err.message);
-  }
-}
+        function clearAllHistory() {
+            if (confirm('Hapus semua riwayat pencarian?')) {
+                localStorage.removeItem(STORAGE_KEY);
+                renderHistory();
+                showToast('Riwayat berhasil dihapus', 'success');
+            }
+        }
 
-function showSindoTrackingModal(groupKeyValue, tracking){
-  const timelineHtml = (tracking.timeline && tracking.timeline.length)
-    ? tracking.timeline.map(t=>`
-        <div class="sindo-timeline-item">
-          <div class="sindo-timeline-date">${esc(t.tanggal || '-')}</div>
-          <div class="sindo-timeline-text">
-            <b>${esc(t.keterangan || '-')}</b>
-            ${t.lokasi && t.lokasi !== t.keterangan ? esc(t.lokasi) : ''}
-          </div>
-        </div>`).join('')
-    : '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:12px">Tidak ada riwayat perjalanan tersedia</div>';
+        /* ========== AKSI ========== */
+        function copyResi() {
+            const resi = document.getElementById('resNumber').textContent;
+            navigator.clipboard.writeText(resi).then(() => {
+                showToast('Nomor resi disalin: ' + resi, 'success');
+            }).catch(() => {
+                const textarea = document.createElement('textarea');
+                textarea.value = resi;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showToast('Nomor resi disalin', 'success');
+            });
+        }
 
-  const detailRow = (label, value) =>
-    `<div class="sindo-detail-row">
-       <div class="sindo-detail-label">${esc(label)}</div>
-       <div class="sindo-detail-value">${esc(value || '-')}</div>
-     </div>`;
+        function shareTracking() {
+            const resi = document.getElementById('resNumber').textContent;
+            const status = document.getElementById('statusBannerText').textContent;
+            const text = `📦 *Status Paket SINDO Express*\n\nNo. Resi: ${resi}\nStatus: ${status}\n\nCek di: ${window.location.href}`;
 
-  const html = `
-    <div class="meta-banner" style="margin-bottom:16px">
-      <span class="icon">📦</span>
-      <span>Hasil Tracking Sindo untuk <b>${esc(groupKeyValue)}</b></span>
-    </div>
-    ${detailRow('Nomor Resi',       tracking.resi || '-')}
-    ${detailRow('Status',           tracking.status || '-')}
-    ${detailRow('Lokasi Terakhir',  tracking.lokasi || '-')}
-    ${detailRow('Tanggal Update',   tracking.tanggal || '-')}
-    ${detailRow('Kurir',            tracking.kurir || '-')}
-    ${detailRow('Pengirim',         tracking.pengirim || '-')}
-    ${detailRow('Penerima',         tracking.penerima || '-')}
-    <div class="sindo-timeline">
-      <div style="font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">
-        Riwayat Perjalanan (${tracking.timeline ? tracking.timeline.length : 0} entri)
-      </div>
-      ${timelineHtml}
-    </div>`;
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Tracking SINDO Express',
+                    text: text
+                }).catch(() => {});
+            } else {
+                const url = 'https://wa.me/?text=' + encodeURIComponent(text);
+                window.open(url, '_blank');
+            }
+        }
 
-  const existing = document.getElementById('sindoModalOverlay');
-  if(existing) existing.remove();
+        function clearInput() {
+            trackingNumberInput.value = '';
+            clearBtn.style.display = 'none';
+            errorMessage.textContent = '';
+            trackingNumberInput.focus();
+        }
 
-  const overlay = document.createElement('div');
-  overlay.id = 'sindoModalOverlay';
-  overlay.className = 'overlay show';
-  overlay.innerHTML = `
-    <div class="modal medium">
-      <div class="modal-head">
-        <div>
-          <h2>🚚 Detail Tracking Sindo</h2>
-          <div class="sub">Data ditarik otomatis dari sistem Sindo Express</div>
-        </div>
-        <button class="close-x" id="sindoModalClose">✕</button>
-      </div>
-      <div class="modal-body" style="max-height:70vh;overflow-y:auto">${html}</div>
-      <div class="modal-foot">
-        <div class="spacer"></div>
-        <button class="btn ghost" id="sindoModalClose2">Tutup</button>
-        <button class="btn primary" id="sindoModalRefresh">🔄 Refresh</button>
-      </div>
-    </div>`;
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            themeToggle.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+            localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
+        }
 
-  document.body.appendChild(overlay);
+        /* ========== TOAST ========== */
+        function showToast(message, type = 'success') {
+            toastMessage.textContent = message;
+            toast.className = 'toast ' + type;
+            toast.querySelector('i').className = type === 'error' ? 'fas fa-exclamation-circle' : 'fas fa-check-circle';
+            
+            toast.classList.add('show');
 
-  const closeFn = ()=> overlay.remove();
-  overlay.querySelector('#sindoModalClose').onclick = closeFn;
-  overlay.querySelector('#sindoModalClose2').onclick = closeFn;
-  overlay.addEventListener('click', e => { if(e.target === overlay) closeFn(); });
-
-  overlay.querySelector('#sindoModalRefresh').onclick = async ()=>{
-    closeFn();
-    const btn = document.querySelector(`.sync-btn[data-key="${CSS.escape(groupKeyValue)}"]`);
-    if(btn){
-      const m = getMeta(groupKeyValue);
-      await syncTrackingForGroup(groupKeyValue, m.noResiExpedisi, btn);
-    } else {
-      toast('⚠️ Tombol sync tidak ditemukan, coba refresh halaman');
-    }
-  };
-}
-
-/* =========================================================
-   CEK STATUS PROXY
-   ========================================================= */
-async function checkProxyStatus(){
-  const el = $('#proxyStatus');
-  if(!el) return;
-  try{
-    const ctrl = new AbortController();
-    const tid = setTimeout(()=>ctrl.abort(), 3000);
-    const r = await fetch(SINDO_HEALTH_URL, { signal: ctrl.signal });
-    clearTimeout(tid);
-    if(r.ok){
-      el.className = 'proxy-status online';
-      el.title = 'Proxy Sindo terhubung';
-    } else {
-      el.className = 'proxy-status offline';
-      el.title = 'Proxy merespons tapi error';
-    }
-  }catch(e){
-    el.className = 'proxy-status offline';
-    el.title = 'Proxy tidak terhubung. Jalankan: node server.js';
-  }
-}
-
-/* =========================================================
-   INIT
-   ========================================================= */
-function init(){
-  $('#today').textContent = new Date().toLocaleDateString('id-ID',
-    { weekday:'long', day:'numeric', month:'long', year:'numeric' });
-
-  loadData();
-  loadMeta();
-  buildMainHead();
-  buildForm();
-  buildMetaForm();
-  renderTable();
-
-  /* Cek status proxy sekali di awal, lalu polling tiap 30 detik */
-  checkProxyStatus();
-  setInterval(checkProxyStatus, 30000);
-
-  $('#searchInput').addEventListener('input', renderTable);
-  $('#siteFilter').addEventListener('change', renderTable);
-  $('#statusFilter').addEventListener('change', renderTable);
-
-  $('#addBtn').addEventListener('click', ()=> openModal(null));
-  $('#closeX').addEventListener('click', closeModal);
-  $('#cancelBtn').addEventListener('click', closeModal);
-  $('#saveBtn').addEventListener('click', saveRecord);
-  $('#deleteBtn').addEventListener('click', deleteRecord);
-  $('#overlay').addEventListener('click', e=>{ if(e.target.id === 'overlay') closeModal(); });
-
-  $('#metaCloseX').addEventListener('click', closeMetaModal);
-  $('#metaCancelBtn').addEventListener('click', closeMetaModal);
-  $('#metaSaveBtn').addEventListener('click', saveMetaRecord);
-  $('#metaOverlay').addEventListener('click', e=>{ if(e.target.id === 'metaOverlay') closeMetaModal(); });
-
-  $('#detailCloseX').addEventListener('click', closeDetail);
-  $('#detailOverlay').addEventListener('click', e=>{ if(e.target.id === 'detailOverlay') closeDetail(); });
-  $('#detailAddBtn').addEventListener('click', ()=>{
-    const presetKey = currentDetailKey === NO_BUKTI_KEY ? '' : currentDetailKey;
-    closeDetail();
-    openModal(null, { buktiTransaksiKirim: presetKey });
-  });
-  $('#detailExportBtn').addEventListener('click', exportGroupExcel);
-  $('#detailMetaBtn').addEventListener('click', ()=>{
-    const key = currentDetailKey;
-    closeDetail();
-    openMetaModal(key);
-  });
-
-  $('#exportBtn').addEventListener('click', exportExcel);
-  $('#templateBtn').addEventListener('click', downloadTemplateExcel);
-
-  $('#importBtn').addEventListener('click', openImportModal);
-  $('#importCloseX').addEventListener('click', closeImportModal);
-  $('#importCancelBtn').addEventListener('click', closeImportModal);
-  $('#importConfirmBtn').addEventListener('click', confirmImport);
-  $('#importOverlay').addEventListener('click', e=>{ if(e.target.id === 'importOverlay') closeImportModal(); });
-
-  const dz = $('#dropZone');
-  const fi = $('#fileInput');
-  dz.addEventListener('click', ()=> fi.click());
-  dz.addEventListener('dragover', e=>{ e.preventDefault(); dz.classList.add('drag'); });
-  dz.addEventListener('dragleave', ()=> dz.classList.remove('drag'));
-  dz.addEventListener('drop', e=>{
-    e.preventDefault(); dz.classList.remove('drag');
-    const f = e.dataTransfer.files[0];
-    if(f) handleFile(f);
-  });
-  fi.addEventListener('change', e=>{
-    const f = e.target.files[0];
-    if(f) handleFile(f);
-  });
-  $('#fcRemove').addEventListener('click', ()=>{
-    importRows = [];
-    importMapping = {};
-    importMetaMap = {};
-    fi.value = '';
-    $('#fileChip').classList.remove('show');
-    $('#previewBox').classList.remove('show');
-    $('#mappingWrap').style.display = 'none';
-    $('#importAlert').classList.remove('show');
-    $('#importConfirmBtn').disabled = true;
-  });
-
-  document.addEventListener('keydown', e=>{
-    if(e.key === 'Escape'){
-      if(document.querySelector('.editable-cell.editing')) return;
-      const sindoModal = document.getElementById('sindoModalOverlay');
-      if(sindoModal){ sindoModal.remove(); return; }
-      if($('#importOverlay').classList.contains('show')) closeImportModal();
-      else if($('#metaOverlay').classList.contains('show')) closeMetaModal();
-      else if($('#detailOverlay').classList.contains('show')) closeDetail();
-      else closeModal();
-    }
-    if(e.key === 'Enter' && $('#overlay').classList.contains('show') && e.target.tagName !== 'TEXTAREA'){
-      e.preventDefault(); saveRecord();
-    }
-  });
-}
-
-init();
-</script>
+            clearTimeout(toast._timer);
+            toast._timer = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+    </script>
 </body>
 </html>
