@@ -1,303 +1,2176 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Auto Tracking SINDO Express</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
-        body { background: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
-        .container { max-width: 800px; width: 100%; background: #fff; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); padding: 30px; }
-        h1 { color: #004a99; font-size: 24px; margin-bottom: 5px; }
-        .subtitle { color: #777; font-size: 14px; margin-bottom: 25px; }
-        .input-group { display: flex; gap: 10px; margin-bottom: 15px; }
-        .input-group input { flex: 1; padding: 14px 18px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; outline: none; transition: border 0.3s; }
-        .input-group input:focus { border-color: #004a99; }
-        .input-group button { padding: 14px 28px; background: #ff6600; color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.3s; }
-        .input-group button:hover { background: #e55a00; }
-        .error { color: #dc3545; font-size: 14px; min-height: 20px; margin-bottom: 10px; }
-        .loading { text-align: center; padding: 30px; display: none; }
-        .loading .spinner { width: 40px; height: 40px; border: 4px solid #eee; border-top-color: #ff6600; border-radius: 50%; margin: 0 auto 15px; animation: spin 1s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .result { display: none; margin-top: 20px; }
-        .status-banner { background: linear-gradient(135deg, #004a99, #003366); color: #fff; padding: 20px; border-radius: 10px; display: flex; align-items: center; gap: 20px; margin-bottom: 20px; }
-        .status-icon { font-size: 36px; }
-        .status-info h2 { font-size: 22px; margin-bottom: 5px; }
-        .status-info p { opacity: 0.85; font-size: 14px; }
-        .progress-bar { flex: 1; height: 8px; background: rgba(255,255,255,0.3); border-radius: 10px; overflow: hidden; }
-        .progress-fill { height: 100%; background: #ff6600; border-radius: 10px; width: 0%; transition: width 1s ease; }
-        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
-        .info-item { background: #f8f9fa; padding: 14px 18px; border-radius: 8px; }
-        .info-item .label { font-size: 11px; text-transform: uppercase; color: #888; letter-spacing: 0.5px; display: block; margin-bottom: 4px; }
-        .info-item .value { font-size: 15px; font-weight: 600; color: #333; }
-        .timeline { position: relative; padding-left: 30px; }
-        .timeline::before { content: ''; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: #ddd; }
-        .timeline-item { position: relative; padding-bottom: 20px; }
-        .timeline-item::before { content: ''; position: absolute; left: -26px; top: 4px; width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 3px solid #ddd; }
-        .timeline-item.done::before { border-color: #28a745; background: #28a745; }
-        .timeline-item.active::before { border-color: #ff6600; background: #ff6600; box-shadow: 0 0 0 4px rgba(255,102,0,0.2); }
-        .timeline-time { font-size: 12px; color: #888; margin-bottom: 2px; }
-        .timeline-title { font-size: 14px; font-weight: 600; color: #333; }
-        .timeline-desc { font-size: 13px; color: #777; }
-        .sample-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-        .sample-chips button { padding: 6px 14px; border: 1px solid #ddd; background: #fff; border-radius: 20px; font-size: 12px; cursor: pointer; font-family: monospace; transition: all 0.2s; }
-        .sample-chips button:hover { background: #004a99; color: #fff; border-color: #004a99; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kontrol Pengiriman Sparepart</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<!-- ===== FIREBASE SDK (compat) ===== -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#eef2f7; --panel:#ffffff; --ink:#0f172a; --muted:#64748b;
+    --line:#e2e8f0; --brand:#2563eb; --brand-dark:#1d4ed8;
+    --green:#16a34a; --amber:#d97706; --red:#dc2626;
+  }
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:var(--bg); color:var(--ink); font-size:13px; padding:18px}
+  .page-head{background:linear-gradient(120deg,#0f172a,#1e3a8a);color:#fff;border-radius:14px;
+    padding:20px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+    box-shadow:0 8px 24px rgba(15,23,42,.18)}
+  .logo{width:46px;height:46px;border-radius:12px;background:rgba(255,255,255,.14);
+    display:grid;place-items:center;font-size:22px;flex:none}
+  .page-head h1{font-size:19px;font-weight:700;letter-spacing:.2px}
+  .page-head p{font-size:12px;color:#c7d2fe;margin-top:3px}
+  .head-badge{margin-left:auto;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);
+    padding:8px 14px;border-radius:10px;font-size:12px;font-weight:600}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:16px 0}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .stat .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:600}
+  .stat .val{font-size:22px;font-weight:700;margin-top:5px}
+  .stat.b .val{color:var(--brand)} .stat.g .val{color:var(--green)}
+  .stat.a .val{color:var(--amber)} .stat.r .val{color:var(--red)}
+  .toolbar{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  .search{position:relative;flex:1;min-width:200px}
+  .search input{width:100%;padding:9px 12px 9px 34px;border:1px solid var(--line);border-radius:9px;
+    font-size:13px;outline:none;background:#f8fafc}
+  .search input:focus{border-color:var(--brand);background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+  .search::before{content:"🔍";position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:12px;opacity:.6}
+  select.filter{padding:9px 12px;border:1px solid var(--line);border-radius:9px;font-size:13px;
+    background:#f8fafc;outline:none;cursor:pointer}
+  select.filter:focus{border-color:var(--brand)}
+  .btn{border:none;border-radius:9px;padding:9px 16px;font-size:13px;font-weight:600;
+    cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+  .btn.primary{background:var(--brand);color:#fff}
+  .btn.primary:hover{background:var(--brand-dark)}
+  .btn.ghost{background:#f1f5f9;color:#334155;border:1px solid var(--line)}
+  .btn.ghost:hover{background:#e2e8f0}
+  .btn.green{background:var(--green);color:#fff}
+  .btn.green:hover{background:#15803d}
+  .btn.excel{background:#107c41;color:#fff}
+  .btn.excel:hover{background:#0c5e31}
+  .btn.danger{background:#fee2e2;color:var(--red)}
+  .btn.danger:hover{background:#fecaca}
+  .btn:disabled{opacity:.6;cursor:not-allowed}
+  .hint-bar{
+    background:#fffbeb;border:1px solid #fde68a;color:#92400e;
+    padding:10px 16px;border-radius:10px;font-size:12px;font-weight:500;
+    margin-bottom:12px;display:flex;align-items:center;gap:9px;
+  }
+  .hint-bar .icon{font-size:15px}
+  .hint-bar b{color:#78350f}
+  .hint-bar code{background:#fef3c7;padding:1px 6px;border-radius:4px;font-family:'Consolas','Monaco',monospace;font-size:11.5px}
+  .table-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .table-wrap{overflow:auto;max-height:calc(100vh - 380px);min-height:280px}
+  .table-wrap::-webkit-scrollbar{width:12px;height:12px}
+  .table-wrap::-webkit-scrollbar-track{background:#e2e8f0}
+  .table-wrap::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:6px}
+  .table-wrap::-webkit-scrollbar-thumb:hover{background:#64748b}
+  .main-table{border-collapse:separate;border-spacing:0;min-width:max-content;width:100%}
+  .main-table thead th{
+    position:sticky;top:0;z-index:2;
+    background:#1e293b;color:#e2e8f0;
+    font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;
+    padding:11px 14px;text-align:left;white-space:nowrap;
+    border-right:1px solid #334155;border-bottom:2px solid #0f172a;
+  }
+  .main-table thead th:last-child{border-right:none}
+  .main-table thead th:first-child{left:0;z-index:4;background:#0f172a}
+  .main-table thead th.input-col{background:#0f766e;color:#fff}
+  .main-table thead th.input-col::after{
+    content:'✎';font-size:10px;margin-left:6px;opacity:.7;
+  }
+  .main-table thead th.tcode-col{background:#7c2d12;color:#fff}
+  .main-table tbody td{
+    padding:11px 14px;border-bottom:1px solid var(--line);border-right:1px solid #f1f5f9;
+    background:#fff;white-space:nowrap;vertical-align:middle;font-size:12.5px;
+  }
+  .main-table tbody td:last-child{border-right:none}
+  .main-table tbody tr{cursor:pointer;transition:.12s}
+  .main-table tbody tr:nth-child(even) td{background:#f8fafc}
+  .main-table tbody tr:hover td{background:#eff6ff}
+  .main-table tbody td:first-child{
+    position:sticky;left:0;z-index:1;background:#fff;
+    font-weight:700;color:var(--brand);
+    border-right:1px solid var(--line);
+  }
+  .main-table tbody tr:nth-child(even) td:first-child{background:#f8fafc}
+  .main-table tbody tr:hover td:first-child{background:#eff6ff}
+  .main-table .btk-cell{display:flex;align-items:center;gap:10px;min-width:220px}
+  .main-table .btk-icon{
+    width:30px;height:30px;border-radius:8px;background:#dbeafe;color:var(--brand);
+    display:grid;place-items:center;font-size:14px;flex:none;
+  }
+  .main-table .btk-text{font-weight:700;color:#1e293b;letter-spacing:.2px}
+  .main-table .btk-sub{font-size:10.5px;color:#64748b;font-weight:500;margin-top:2px}
+  .main-table .item-cell{text-align:center}
+  .main-table .item-badge{
+    display:inline-block;padding:3px 10px;border-radius:20px;
+    background:#dbeafe;color:#1e40af;font-size:11px;font-weight:700;
+  }
+  .main-table .meta-empty{color:#cbd5e1}
+  .main-table .tcode-cell{font-family:'Consolas','Monaco',monospace;font-weight:700;color:#7c2d12;font-size:12px}
+  .main-table .tcode-cell.auto{position:relative}
+  .main-table .tcode-cell.auto::before{
+    content:'⚡';position:absolute;left:3px;top:2px;font-size:9px;opacity:.7;
+  }
+  .main-table .aksi-col{
+    position:sticky;right:0;z-index:2;background:#f1f5f9;
+    border-left:1px solid var(--line);border-right:none;text-align:center;
+  }
+  .main-table thead th.aksi-col{background:#0f172a;border-left:1px solid #334155;border-right:none}
+  .main-table tbody tr:hover td.aksi-col{background:#dbeafe}
+  .main-table .btn-icon{
+    padding:5px 10px;border-radius:6px;border:1px solid var(--line);background:#fff;
+    cursor:pointer;font-size:11px;font-weight:600;color:#334155;transition:.12s;
+    display:inline-flex;align-items:center;gap:4px;margin:0 2px;
+  }
+  .main-table .btn-icon:hover{background:#eff6ff;border-color:var(--brand);color:var(--brand)}
+  .main-table td.editable-cell{
+    cursor:pointer;position:relative;min-width:130px;
+    transition:background .12s;
+  }
+  .main-table td.editable-cell:hover{
+    background:#fef9c3 !important;
+    box-shadow:inset 0 0 0 2px #fbbf24;
+  }
+  .main-table td.editable-cell::after{
+    content:'✎';position:absolute;right:5px;top:6px;
+    font-size:10px;color:#cbd5e1;opacity:0;transition:opacity .15s;
+  }
+  .main-table td.editable-cell:hover::after{opacity:1;color:#d97706}
+  .main-table td.editable-cell.editing{
+    padding:4px !important;
+    background:#fff !important;
+    box-shadow:inset 0 0 0 2px var(--brand) !important;
+  }
+  .main-table td.editable-cell.editing::after{display:none}
+  .cell-input{
+    width:100%;min-width:120px;
+    border:1px solid var(--brand);border-radius:6px;
+    padding:7px 9px;font-size:12.5px;font-family:inherit;
+    outline:none;background:#fff;color:var(--ink);
+  }
+  .cell-input:focus{box-shadow:0 0 0 3px rgba(37,99,235,.18)}
+  .empty{padding:60px 20px;text-align:center;color:var(--muted)}
+  .empty .big{font-size:38px;margin-bottom:10px}
+  .overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);backdrop-filter:blur(2px);
+    display:none;align-items:center;justify-content:center;padding:20px;z-index:50}
+  .overlay.show{display:flex}
+  .modal{background:#fff;border-radius:16px;width:min(1080px,100%);max-height:92vh;
+    display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.35);animation:pop .18s ease}
+  .modal.small{width:min(680px,100%)}
+  .modal.medium{width:min(1000px,100%)}
+  .modal.wide{width:min(1600px,100%)}
+  @keyframes pop{from{transform:scale(.96);opacity:0}to{transform:scale(1);opacity:1}}
+  .modal-head{padding:16px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px}
+  .modal-head h2{font-size:16px;font-weight:700}
+  .modal-head .sub{font-size:11px;color:var(--muted);margin-top:3px}
+  .close-x{margin-left:auto;background:#f1f5f9;border:none;width:32px;height:32px;border-radius:8px;
+    cursor:pointer;font-size:15px;color:#475569;flex:none}
+  .close-x:hover{background:#e2e8f0}
+  .modal-body{padding:20px 22px;overflow-y:auto}
+  .modal-foot{padding:14px 22px;border-top:1px solid var(--line);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .spacer{flex:1}
+  .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+  .field{display:flex;flex-direction:column;gap:5px}
+  .field.full{grid-column:1/-1}
+  .field label{font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.4px}
+  .field input,.field select,.field textarea{padding:9px 11px;border:1px solid var(--line);border-radius:8px;
+    font-size:13px;font-family:inherit;outline:none;background:#f8fafc;width:100%}
+  .field input:focus,.field select:focus,.field textarea:focus{
+    border-color:var(--brand);background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+  .field textarea{resize:vertical;min-height:64px}
+  .field .field-hint{font-size:10.5px;color:#94a3b8;margin-top:-2px}
+  .meta-banner{
+    padding:12px 16px;border-radius:10px;background:#dbeafe;border:1px solid #bfdbfe;
+    color:#1e40af;font-size:13px;font-weight:600;display:flex;align-items:center;gap:10px;
+  }
+  .meta-banner .icon{font-size:18px}
+  .detail-title-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .detail-title-row .key{font-size:16px;font-weight:700;color:#1e293b;letter-spacing:.2px}
+  .detail-title-row .count-pill{font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;
+    background:#dbeafe;color:#1e40af}
+  .detail-hint{font-size:11px;color:var(--muted);margin-top:4px}
+  .detail-sheet-wrap{
+    flex:1; overflow:auto; background:#f8fafc;
+    min-height:340px; max-height:calc(92vh - 200px);
+  }
+  .detail-sheet-wrap::-webkit-scrollbar{width:12px;height:12px}
+  .detail-sheet-wrap::-webkit-scrollbar-track{background:#e2e8f0}
+  .detail-sheet-wrap::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:6px}
+  .detail-sheet-wrap::-webkit-scrollbar-thumb:hover{background:#64748b}
+  .detail-sheet{border-collapse:separate;border-spacing:0;min-width:max-content;width:100%;font-size:12.5px}
+  .detail-sheet thead th{
+    position:sticky;top:0;z-index:2;
+    background:#1e293b;color:#e2e8f0;
+    font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+    padding:11px 14px;text-align:left;white-space:nowrap;
+    border-right:1px solid #334155;border-bottom:2px solid #0f172a;
+  }
+  .detail-sheet thead th:last-child{border-right:none}
+  .detail-sheet thead th:first-child{left:0;z-index:4;background:#0f172a}
+  .detail-sheet tbody td{
+    padding:11px 14px;border-bottom:1px solid var(--line);border-right:1px solid #f1f5f9;
+    background:#fff;white-space:nowrap;vertical-align:middle;
+  }
+  .detail-sheet tbody td:last-child{border-right:none}
+  .detail-sheet tbody tr:nth-child(even) td{background:#f8fafc}
+  .detail-sheet tbody tr:hover td{background:#eff6ff}
+  .detail-sheet tbody td:first-child{
+    position:sticky;left:0;z-index:1;background:#fff;
+    font-weight:700;color:var(--brand);border-right:1px solid var(--line);
+  }
+  .detail-sheet tbody tr:nth-child(even) td:first-child{background:#f8fafc}
+  .detail-sheet tbody tr:hover td:first-child{background:#eff6ff}
+  .detail-sheet .col-aksi{
+    text-align:center;white-space:nowrap;background:#f1f5f9 !important;
+    position:sticky;right:0;z-index:2;
+    border-left:1px solid var(--line);border-right:none;
+  }
+  .detail-sheet thead th.col-aksi{background:#0f172a !important;color:#fff;border-left:1px solid #334155}
+  .detail-sheet tbody tr:hover td.col-aksi{background:#dbeafe !important}
+  .detail-sheet .qty-cell{text-align:center;font-weight:700}
+  .detail-sheet .pn-cell,.detail-sheet .po-cell{font-weight:600;color:#1e293b}
+  .detail-sheet .desc-cell{color:#334155;max-width:260px;overflow:hidden;text-overflow:ellipsis}
+  .detail-sheet .ana-cell{color:#475569;max-width:240px;overflow:hidden;text-overflow:ellipsis}
+  .detail-summary{font-size:12px;color:#475569;font-weight:600}
+  .detail-summary b{color:#1e293b}
+  .btn-icon{padding:5px 11px;border-radius:7px;border:1px solid var(--line);background:#fff;
+    cursor:pointer;font-size:11.5px;font-weight:600;color:#334155;transition:.12s;
+    display:inline-flex;align-items:center;gap:4px;margin:0 2px}
+  .btn-icon:hover{background:#eff6ff;border-color:var(--brand);color:var(--brand)}
+  .btn-icon.danger{color:var(--red)}
+  .btn-icon.danger:hover{background:#fee2e2;border-color:var(--red);color:var(--red)}
+  .pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
+  .pill.open{background:#fef3c7;color:#92400e}
+  .pill.proses{background:#dbeafe;color:#1e40af}
+  .pill.selesai{background:#dcfce7;color:#166534}
+  .pill.batal{background:#fee2e2;color:#991b1b}
+  .yn{font-weight:700}
+  .yn.ya{color:var(--green)}
+  .yn.tidak{color:#94a3b8}
+  .drop-zone{border:2px dashed #cbd5e1;border-radius:14px;padding:34px 20px;text-align:center;
+    background:#f8fafc;cursor:pointer;transition:.15s}
+  .drop-zone:hover,.drop-zone.drag{border-color:var(--brand);background:#eff6ff}
+  .drop-zone .icon{font-size:42px;margin-bottom:10px}
+  .drop-zone .ttl{font-size:14px;font-weight:700;color:#1e293b}
+  .drop-zone .hint{font-size:12px;color:var(--muted);margin-top:6px}
+  .file-chip{display:none;align-items:center;gap:10px;margin-top:14px;padding:12px 16px;
+    background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px}
+  .file-chip.show{display:flex}
+  .file-chip .fc-icon{font-size:22px}
+  .file-chip .fc-name{font-weight:700;color:#065f46;font-size:13px}
+  .file-chip .fc-meta{font-size:11px;color:#047857;margin-top:2px}
+  .file-chip .fc-x{margin-left:auto;background:#d1fae5;border:none;width:28px;height:28px;border-radius:7px;cursor:pointer;color:#065f46}
+  .file-chip .fc-x:hover{background:#a7f3d0}
+  .opt-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:16px;padding:14px;
+    background:#f8fafc;border-radius:10px;border:1px solid var(--line)}
+  .opt-row label{font-size:12px;font-weight:600;color:#334155;cursor:pointer;display:flex;align-items:center;gap:6px}
+  .preview-box{margin-top:14px;display:none;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .preview-box.show{display:block}
+  .preview-head{padding:10px 14px;background:#f1f5f9;font-size:12px;font-weight:700;color:#334155;
+    border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+  .preview-scroll{max-height:230px;overflow:auto}
+  .preview-scroll table{width:100%;font-size:11px;min-width:0}
+  .preview-scroll th{position:sticky;top:0;background:#e2e8f0;color:#1e293b;padding:7px 10px;font-size:10px;text-align:left;white-space:nowrap}
+  .preview-scroll td{padding:6px 10px;border-bottom:1px solid #f1f5f9;white-space:nowrap}
+  .mapping-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .map-tag{font-size:10.5px;padding:4px 9px;border-radius:6px;background:#dcfce7;color:#166534;font-weight:600}
+  .map-tag.miss{background:#fef3c7;color:#92400e}
+  .map-tag.meta{background:#dbeafe;color:#1e40af}
+  .alert{padding:10px 14px;border-radius:9px;font-size:12px;margin-top:12px;display:none}
+  .alert.show{display:block}
+  .alert.info{background:#dbeafe;color:#1e40af}
+  .alert.warn{background:#fef3c7;color:#92400e}
+  .alert.err{background:#fee2e2;color:#991b1b}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);
+    background:#0f172a;color:#fff;padding:11px 20px;border-radius:10px;font-size:13px;font-weight:600;
+    opacity:0;transition:.28s;z-index:99;pointer-events:none;max-width:90vw;text-align:center}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* ====== LOGIN / LOADING / USER CHIP ====== */
+  .login-screen{position:fixed;inset:0;display:none;place-items:center;padding:20px;z-index:200;
+    background:linear-gradient(135deg,#0f172a 0%,#1e3a8a 55%,#0f766e 100%)}
+  .login-screen.show{display:grid}
+  .login-card{width:min(400px,100%);background:#fff;border-radius:18px;padding:32px 28px;
+    box-shadow:0 30px 70px rgba(0,0,0,.45);text-align:center;animation:pop .22s ease}
+  .login-logo{width:64px;height:64px;border-radius:18px;margin:0 auto 14px;
+    background:linear-gradient(135deg,#2563eb,#0f766e);display:grid;place-items:center;font-size:30px;
+    box-shadow:0 10px 24px rgba(37,99,235,.35)}
+  .login-card h1{font-size:17px;font-weight:700;color:#0f172a}
+  .login-sub{font-size:12px;color:#64748b;margin:6px 0 22px}
+  .login-card .field{text-align:left;margin-bottom:14px}
+  .login-card .field input{padding:11px 13px;font-size:13.5px}
+  .login-btn{width:100%;justify-content:center;padding:12px;font-size:14px;margin-top:6px}
+  .login-msg{font-size:12px;margin-top:12px;min-height:16px;font-weight:600}
+  .login-msg.err{color:#dc2626}
+  .login-msg.ok{color:#16a34a}
+  .login-foot{margin-top:20px;font-size:11px;color:#94a3b8;line-height:1.6}
+  .loading-screen{position:fixed;inset:0;display:none;place-items:center;z-index:210;
+    background:#0f172a;color:#e2e8f0;font-size:13px;font-weight:600;
+    grid-auto-rows:min-content;gap:16px;text-align:center}
+  .loading-screen.show{display:grid}
+  .spinner{width:38px;height:38px;border:3px solid rgba(255,255,255,.2);border-top-color:#60a5fa;
+    border-radius:50%;animation:spin .8s linear infinite;margin:0 auto}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .user-chip{display:none;align-items:center;gap:8px;background:rgba(255,255,255,.12);
+    border:1px solid rgba(255,255,255,.2);padding:6px 8px 6px 12px;border-radius:10px;
+    font-size:12px;font-weight:600;color:#fff}
+  .user-chip.show{display:flex}
+  .user-chip .u-avatar{width:24px;height:24px;border-radius:50%;background:#60a5fa;color:#0f172a;
+    display:grid;place-items:center;font-size:11px;font-weight:800;flex:none}
+  .user-chip button{background:rgba(255,255,255,.16);border:none;color:#fff;border-radius:7px;
+    padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;transition:.15s}
+  .user-chip button:hover{background:rgba(239,68,68,.9)}
+
+  /* ====== EXPORT DROPDOWN ====== */
+  .export-wrap{position:relative;display:inline-block}
+  .export-menu{
+    position:absolute;top:calc(100% + 6px);left:0;z-index:30;
+    background:#fff;border:1px solid var(--line);border-radius:10px;
+    box-shadow:0 12px 28px rgba(15,23,42,.18);
+    min-width:300px;padding:6px;display:none;
+  }
+  .export-menu.show{display:block;animation:pop .15s ease}
+  .export-menu button{
+    display:flex;align-items:flex-start;gap:11px;width:100%;text-align:left;
+    background:transparent;border:none;padding:11px 12px;border-radius:8px;
+    cursor:pointer;font-size:12.5px;color:#1e293b;font-weight:700;
+    font-family:inherit;transition:.12s;
+  }
+  .export-menu button:hover{background:#eff6ff;color:var(--brand)}
+  .export-menu button .em-icon{font-size:18px;flex:none;line-height:1.1}
+  .export-menu button .em-sub{
+    display:block;font-size:10.5px;color:#94a3b8;font-weight:500;margin-top:2px;
+  }
+  .export-menu button:hover .em-sub{color:var(--brand)}
+  .export-menu .em-sep{height:1px;background:var(--line);margin:4px 8px}
+
+  @media(max-width:640px){
+    body{padding:10px}
+    .page-head{padding:16px}
+    .page-head h1{font-size:16px}
+    .head-badge{display:none}
+    .user-chip #userName{display:none}
+  }
+</style>
 </head>
 <body>
-    <div class="container">
-        <h1>📦 Auto Tracking SINDO Express</h1>
-        <p class="subtitle">Masukkan nomor resi, sistem akan otomatis memprosesnya</p>
 
-        <div class="input-group">
-            <input type="text" id="resiInput" placeholder="Contoh: K2601571-236" autocomplete="off">
-            <button id="trackBtn">Lacak</button>
-        </div>
-        <div class="error" id="errorMsg"></div>
+<!-- ================= LOGIN ================= -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">📦</div>
+    <h1>Kontrol Pengiriman Sparepart</h1>
+    <div class="login-sub">Masuk untuk melanjutkan</div>
+    <form id="loginForm" autocomplete="on">
+      <div class="field">
+        <label for="loginUser">Username</label>
+        <input type="text" id="loginUser" placeholder="mis. admin" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label for="loginPass">Password</label>
+        <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password" required>
+      </div>
+      <button class="btn primary login-btn" id="loginBtn" type="submit">🔐 Masuk</button>
+      <div class="login-msg" id="loginMsg"></div>
+    </form>
+    <div class="login-foot">Hubungi administrator jika belum punya akun</div>
+  </div>
+</div>
 
-        <div class="sample-chips">
-            <span style="font-size:12px;color:#888;align-self:center;">Coba:</span>
-            <button data-resi="K2601571-236">K2601571-236</button>
-            <button data-resi="SN123456789">SN123456789</button>
-            <button data-resi="SN987654321">SN987654321</button>
-        </div>
+<!-- ================= LOADING ================= -->
+<div class="loading-screen show" id="loadingScreen">
+  <div>
+    <div class="spinner"></div>
+    <div style="margin-top:14px">Memuat aplikasi…</div>
+  </div>
+</div>
 
-        <div class="loading" id="loading">
-            <div class="spinner"></div>
-            <p style="color:#777;">Memproses nomor resi...</p>
-        </div>
+<!-- ================= APP ================= -->
+<div id="appWrap" style="display:none">
 
-        <div class="result" id="result">
-            <div class="status-banner">
-                <div class="status-icon" id="statusIcon">🚚</div>
-                <div class="status-info">
-                    <h2 id="statusText">-</h2>
-                    <p id="statusSub">-</p>
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progressFill"></div>
-                </div>
-            </div>
+<div class="page-head">
+  <div class="logo">📦</div>
+  <div>
+    <h1>Kontrol Pengiriman Sparepart</h1>
+    <p>Klik sel kolom <b>info pengiriman</b> untuk input manual · Klik baris untuk lihat detail item</p>
+  </div>
+  <div class="head-badge">📅 <span id="today"></span></div>
+  <div class="user-chip" id="userChip">
+    <div class="u-avatar" id="userAvatar">U</div>
+    <span id="userName">-</span>
+    <button id="logoutBtn" title="Keluar">Keluar</button>
+  </div>
+</div>
 
-            <div class="info-grid">
-                <div class="info-item"><span class="label">Nomor Resi</span><span class="value" id="resNumber">-</span></div>
-                <div class="info-item"><span class="label">Pengirim</span><span class="value" id="resSender">-</span></div>
-                <div class="info-item"><span class="label">Penerima</span><span class="value" id="resReceiver">-</span></div>
-                <div class="info-item"><span class="label">Asal</span><span class="value" id="resOrigin">-</span></div>
-                <div class="info-item"><span class="label">Tujuan</span><span class="value" id="resDestination">-</span></div>
-                <div class="info-item"><span class="label">Tanggal Kirim</span><span class="value" id="resDate">-</span></div>
-                <div class="info-item"><span class="label">Estimasi Tiba</span><span class="value" id="resEta">-</span></div>
-                <div class="info-item"><span class="label">Berat</span><span class="value" id="resWeight">-</span></div>
-            </div>
+<div class="stats">
+  <div class="stat b"><div class="lbl">Total Bukti Transaksi</div><div class="val" id="stTotal">0</div></div>
+  <div class="stat g"><div class="lbl">Total Qty</div><div class="val" id="stQty">0</div></div>
+  <div class="stat a"><div class="lbl">Status Open / Proses</div><div class="val" id="stOpen">0</div></div>
+  <div class="stat r"><div class="lbl">Kembali ke Pabrik</div><div class="val" id="stPabrik">0</div></div>
+</div>
 
-            <h3 style="color:#004a99;margin-bottom:15px;">Riwayat Perjalanan</h3>
-            <div class="timeline" id="timeline"></div>
-        </div>
+<div class="toolbar">
+  <div class="search">
+    <input type="text" id="searchInput" placeholder="Cari bukti transaksi, no resi, expedisi, part number, site...">
+  </div>
+  <select class="filter" id="siteFilter"><option value="">Semua Site</option></select>
+  <select class="filter" id="statusFilter">
+    <option value="">Semua Status</option>
+    <option>Open</option><option>Proses</option><option>Selesai</option><option>Batal</option>
+  </select>
+  <button class="btn green" id="importBtn">📥 Upload Excel</button>
+  <div class="export-wrap">
+    <button class="btn excel" id="exportBtn">⬇ Download Excel ▾</button>
+    <div class="export-menu" id="exportMenu">
+      <button data-mode="full" type="button">
+        <span class="em-icon">📋</span>
+        <span>
+          <span style="display:block">Data Lengkap (per Item)</span>
+          <span class="em-sub">Semua kolom · 1 baris = 1 part number</span>
+        </span>
+      </button>
+      <div class="em-sep"></div>
+      <button data-mode="front" type="button">
+        <span class="em-icon">📊</span>
+        <span>
+          <span style="display:block">Tampilan Depan (per Grup)</span>
+          <span class="em-sub">Sesuai tabel utama · 1 baris = 1 Bukti Transaksi</span>
+        </span>
+      </button>
     </div>
+  </div>
+  <button class="btn ghost" id="templateBtn">📄 Template Excel</button>
+  <button class="btn primary" id="addBtn">＋ Tambah Data</button>
+</div>
 
-    <script>
-        // ========== DATABASE SIMULASI ==========
-        // Format resi SINDO: huruf + angka + tanda hubung, contoh: K2601571-236
-        const database = {
-            'K2601571-236': {
-                resNumber: 'K2601571-236',
-                status: 'Dalam Perjalanan',
-                statusSub: 'Paket sedang menuju kota tujuan',
-                progress: 70,
-                sender: 'PT Sinar Indo Pratama',
-                receiver: 'Ahmad Wijaya',
-                origin: 'Jakarta',
-                destination: 'Makassar',
-                date: '20 Januari 2026',
-                eta: '24 Januari 2026',
-                weight: '3.5 kg',
-                timeline: [
-                    { time: '20 Jan 2026, 08:30', title: 'Paket Dijemput', desc: 'Kurir menjemput paket di Jakarta', status: 'done' },
-                    { time: '20 Jan 2026, 15:00', title: 'Masuk Gudang Jakarta', desc: 'Paket diterima di gudang sortir Jakarta', status: 'done' },
-                    { time: '21 Jan 2026, 09:00', title: 'Transit di Surabaya', desc: 'Paket transit di gudang Surabaya', status: 'done' },
-                    { time: '22 Jan 2026, 06:00', title: 'Dalam Perjalanan ke Makassar', desc: 'Paket sedang dikirim melalui jalur laut', status: 'active' },
-                    { time: 'Estimasi 24 Jan 2026', title: 'Tiba di Makassar', desc: 'Paket akan tiba di gudang Makassar', status: 'pending' },
-                    { time: 'Estimasi 24 Jan 2026', title: 'Terkirim', desc: 'Paket diterima oleh penerima', status: 'pending' }
-                ]
-            },
-            'SN123456789': {
-                resNumber: 'SN123456789',
-                status: 'Terkirim',
-                statusSub: 'Paket telah diterima',
-                progress: 100,
-                sender: 'Toko Online ABC',
-                receiver: 'Budi Santoso',
-                origin: 'Bandung',
-                destination: 'Yogyakarta',
-                date: '10 Januari 2026',
-                eta: '13 Januari 2026',
-                weight: '1.2 kg',
-                timeline: [
-                    { time: '10 Jan 2026, 07:30', title: 'Paket Dijemput', desc: 'Kurir menjemput paket di Bandung', status: 'done' },
-                    { time: '10 Jan 2026, 13:00', title: 'Masuk Gudang Bandung', desc: 'Paket diterima di gudang sortir Bandung', status: 'done' },
-                    { time: '11 Jan 2026, 10:00', title: 'Transit di Purwokerto', desc: 'Paket transit di Purwokerto', status: 'done' },
-                    { time: '12 Jan 2026, 08:00', title: 'Tiba di Yogyakarta', desc: 'Paket tiba di gudang Yogyakarta', status: 'done' },
-                    { time: '13 Jan 2026, 14:00', title: 'Terkirim', desc: 'Paket diterima oleh Budi Santoso', status: 'done' }
-                ]
-            },
-            'SN987654321': {
-                resNumber: 'SN987654321',
-                status: 'Menunggu Pickup',
-                statusSub: 'Paket belum dijemput kurir',
-                progress: 10,
-                sender: 'CV Karya Mandiri',
-                receiver: 'Siti Aminah',
-                origin: 'Medan',
-                destination: 'Palembang',
-                date: '22 Januari 2026',
-                eta: '26 Januari 2026',
-                weight: '2.0 kg',
-                timeline: [
-                    { time: '22 Jan 2026, 10:00', title: 'Pesanan Dibuat', desc: 'Data pengiriman diterima sistem', status: 'done' },
-                    { time: '22 Jan 2026, 10:30', title: 'Menunggu Penjemputan', desc: 'Paket akan dijemput oleh kurir', status: 'active' },
-                    { time: 'Estimasi 23 Jan 2026', title: 'Paket Dijemput', desc: 'Kurir akan menjemput paket', status: 'pending' },
-                    { time: 'Estimasi 26 Jan 2026', title: 'Terkirim', desc: 'Paket diterima oleh penerima', status: 'pending' }
-                ]
-            }
-        };
+<div class="hint-bar">
+  <span class="icon">💡</span>
+  <span>
+    Kolom <b>Nomor Surat Jalan ke P3</b>, <b>Dikonfirmasi Tanggal</b>, <b>Sjl KPG - SBY</b>, <b>Tgl Kirim KPG - SBY</b>, <b>NAMA EXPEDISI</b>, <b>NO. RESI / TRACKING EXPEDISI</b>, <b>Sjl SBY</b>, <b>Tgl Kirim SBY</b>, <b>NO TRUK | DRIVER</b>, <b>Diubah Oleh</b>, <b>Diubah Pada</b>, dan <b>TCODE</b> bisa <b>langsung diklik &amp; diketik</b> di sel-nya.
+    Kolom <b>TCODE</b> otomatis terisi <b>3 huruf pertama</b> dari <b>Bukti Transaksi Kirim</b>
+    (contoh: <code>KKG/KPG/SV/26/06/003</code> → <b>KKG</b>, <code>TRU/KPG/SV/26/06/006</code> → <b>TRU</b>).
+    Tekan <b>Enter</b> untuk simpan, <b>Esc</b> untuk batal.
+    <br><span style="color:#78350f">💾 Tombol <b>Download Excel</b> kini punya 2 opsi: <b>Data Lengkap (per Item)</b> dan <b>Tampilan Depan (per Grup)</b>.</span>
+  </span>
+</div>
 
-        // ========== ELEMEN ==========
-        const resiInput = document.getElementById('resiInput');
-        const trackBtn = document.getElementById('trackBtn');
-        const errorMsg = document.getElementById('errorMsg');
-        const loading = document.getElementById('loading');
-        const result = document.getElementById('result');
+<div class="table-card">
+  <div class="table-wrap">
+    <table class="main-table">
+      <thead id="mainThead"></thead>
+      <tbody id="mainTbody"></tbody>
+    </table>
+  </div>
+</div>
 
-        // ========== FUNGSI OTOMATIS ==========
-        // Deteksi otomatis saat user mengetik (debounce)
-        let typingTimer;
-        resiInput.addEventListener('input', function() {
-            clearTimeout(typingTimer);
-            const val = this.value.trim();
-            errorMsg.textContent = '';
+<!-- META MODAL -->
+<div class="overlay" id="metaOverlay">
+  <div class="modal medium">
+    <div class="modal-head">
+      <div>
+        <h2>✏ Edit Info Pengiriman (Form Lengkap)</h2>
+        <div class="sub">Alternatif input manual lewat form — untuk mengisi seluruh kolom info sekaligus</div>
+      </div>
+      <button class="close-x" id="metaCloseX">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="meta-banner">
+        <span class="icon">📄</span>
+        <span>Bukti Transaksi Kirim: <b id="metaKeyDisplay">-</b></span>
+      </div>
+      <form id="metaForm" class="form-grid" style="margin-top:16px" onsubmit="return false"></form>
+    </div>
+    <div class="modal-foot">
+      <div class="spacer"></div>
+      <button class="btn ghost" id="metaCancelBtn">Batal</button>
+      <button class="btn primary" id="metaSaveBtn">💾 Simpan Info</button>
+    </div>
+  </div>
+</div>
 
-            // Jika format resi valid (minimal 6 karakter, ada huruf & angka), auto-lacak setelah 800ms
-            if (val.length >= 6) {
-                typingTimer = setTimeout(() => {
-                    if (/[A-Za-z]/.test(val) && /[0-9]/.test(val)) {
-                        autoTrack(val);
-                    }
-                }, 800);
-            }
-        });
+<!-- DETAIL MODAL -->
+<div class="overlay" id="detailOverlay">
+  <div class="modal wide">
+    <div class="modal-head">
+      <div style="min-width:0">
+        <div class="detail-title-row">
+          <span class="key" id="detailKey">-</span>
+          <span class="count-pill" id="detailCount">0 item</span>
+        </div>
+        <div class="detail-hint">Tampilan spreadsheet — kolom <b>Nomor</b> di sini menampilkan nomor urut baru sesuai urutan item (1, 2, 3, …)</div>
+      </div>
+      <button class="close-x" id="detailCloseX">✕</button>
+    </div>
+    <div class="detail-sheet-wrap" id="detailSheetWrap">
+      <table class="detail-sheet">
+        <thead id="detailThead"></thead>
+        <tbody id="detailTbody"></tbody>
+      </table>
+    </div>
+    <div class="modal-foot">
+      <div class="detail-summary" id="detailSummary">-</div>
+      <div class="spacer"></div>
+      <button class="btn ghost" id="detailMetaBtn">✏ Edit Info Pengiriman</button>
+      <button class="btn excel" id="detailExportBtn">⬇ Download Excel Grup Ini</button>
+      <button class="btn primary" id="detailAddBtn">＋ Tambah Item</button>
+    </div>
+  </div>
+</div>
 
-        // Enter key
-        resiInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                clearTimeout(typingTimer);
-                autoTrack(this.value.trim());
-            }
-        });
+<!-- FORM MODAL -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h2 id="modalTitle">Tambah Data Pengiriman</h2>
+        <div class="sub">Lengkapi data sparepart di bawah ini</div>
+      </div>
+      <button class="close-x" id="closeX">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="dataForm" class="form-grid" onsubmit="return false"></form>
+    </div>
+    <div class="modal-foot">
+      <button class="btn danger" id="deleteBtn" style="display:none">🗑 Hapus</button>
+      <div class="spacer"></div>
+      <button class="btn ghost" id="cancelBtn">Batal</button>
+      <button class="btn primary" id="saveBtn">💾 Simpan</button>
+    </div>
+  </div>
+</div>
 
-        // Tombol manual
-        trackBtn.addEventListener('click', function() {
-            clearTimeout(typingTimer);
-            autoTrack(resiInput.value.trim());
-        });
+<!-- IMPORT MODAL -->
+<div class="overlay" id="importOverlay">
+  <div class="modal small">
+    <div class="modal-head">
+      <div>
+        <h2>📥 Upload Data dari Excel</h2>
+        <div class="sub">Format: .xlsx, .xls, .csv — header baris pertama harus sesuai nama kolom</div>
+      </div>
+      <button class="close-x" id="importCloseX">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="drop-zone" id="dropZone">
+        <div class="icon">📊</div>
+        <div class="ttl">Klik atau tarik file Excel ke sini</div>
+        <div class="hint">Maks 1 file · .xlsx / .xls / .csv</div>
+      </div>
+      <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none">
 
-        // Sample chips
-        document.querySelectorAll('.sample-chips button').forEach(btn => {
-            btn.addEventListener('click', function() {
-                resiInput.value = this.dataset.resi;
-                clearTimeout(typingTimer);
-                autoTrack(this.dataset.resi);
-            });
-        });
+      <div class="file-chip" id="fileChip">
+        <div class="fc-icon">📄</div>
+        <div>
+          <div class="fc-name" id="fcName">-</div>
+          <div class="fc-meta" id="fcMeta">-</div>
+        </div>
+        <button class="fc-x" id="fcRemove" title="Hapus file">✕</button>
+      </div>
 
-        // ========== FUNGSI UTAMA TRACKING ==========
-        function autoTrack(resi) {
-            if (!resi) {
-                errorMsg.textContent = 'Silakan masukkan nomor resi.';
-                return;
-            }
+      <div class="opt-row">
+        <span style="font-size:12px;font-weight:700;color:#334155">Mode Import:</span>
+        <label><input type="radio" name="importMode" value="append" checked> Tambahkan ke data existing</label>
+        <label><input type="radio" name="importMode" value="replace"> Ganti semua data</label>
+      </div>
 
-            // Validasi format: huruf + angka, boleh ada tanda hubung
-            if (!/^[A-Za-z0-9\-]+$/.test(resi)) {
-                errorMsg.textContent = 'Format nomor resi tidak valid.';
-                return;
-            }
+      <div class="alert" id="importAlert"></div>
 
-            errorMsg.textContent = '';
-            result.style.display = 'none';
-            loading.style.display = 'block';
+      <div class="preview-box" id="previewBox">
+        <div class="preview-head">
+          <span>🔎 Preview Data</span>
+          <span id="previewCount" style="font-weight:600;color:#64748b">0 baris</span>
+        </div>
+        <div class="preview-scroll" id="previewScroll"></div>
+      </div>
 
-            // Simulasi proses request (delay 1 detik)
-            setTimeout(() => {
-                loading.style.display = 'none';
+      <div id="mappingWrap" style="display:none;margin-top:14px">
+        <div style="font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">
+          Status Pemetaan Kolom
+        </div>
+        <div class="mapping-list" id="mappingList"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <div class="spacer"></div>
+      <button class="btn ghost" id="importCancelBtn">Batal</button>
+      <button class="btn green" id="importConfirmBtn" disabled>✓ Import Sekarang</button>
+    </div>
+  </div>
+</div>
 
-                // Cari di database
-                const data = database[resi.toUpperCase()];
+</div><!-- /#appWrap -->
 
-                if (!data) {
-                    errorMsg.textContent = '❌ Nomor resi "' + resi + '" tidak ditemukan. Coba contoh yang tersedia.';
-                    return;
-                }
+<div class="toast" id="toast"></div>
 
-                // Tampilkan hasil
-                renderResult(data);
-            }, 1000);
+<script>
+/* =========================================================
+   FIELD DEFINITIONS
+   ========================================================= */
+const FIELDS = [
+  { key:'nomor',                label:'Nomor',                   type:'text'   },
+  { key:'site',                 label:'Site',                    type:'text'   },
+  { key:'buktiTransaksiKirim',  label:'Bukti Transaksi Kirim',   type:'text'   },
+  { key:'tanggalReservasi',     label:'Tanggal Reservasi',       type:'date'   },
+  { key:'buktiServiceCall',     label:'Bukti Service Call',      type:'text'   },
+  { key:'buktiServiceJob',      label:'Bukti Service Job',       type:'text'   },
+  { key:'statusServiceCall',    label:'Status Service Call',     type:'select', options:['Open','Proses','Selesai','Batal'] },
+  { key:'partNumber',           label:'Part Number',             type:'text'   },
+  { key:'deskripsiPartNumber',  label:'Deskripsi Part Number',   type:'text'   },
+  { key:'qty',                  label:'Qty',                     type:'number' },
+  { key:'nomorSeriMaterial',    label:'Nomor Seri Material',     type:'text'   },
+  { key:'kembaliKePabrik',      label:'Kembali Ke Pabrik',       type:'select', options:['Ya','Tidak'] },
+  { key:'klaimKeHIT',           label:'Klaim Ke HIT',            type:'select', options:['Ya','Tidak'] },
+  { key:'lokasiReservasi',      label:'Lokasi Reservasi',        type:'text'   },
+  { key:'lokasiStok',           label:'Lokasi Stok',             type:'text'   },
+  { key:'lokasiTujuan',         label:'Lokasi Tujuan',           type:'text'   },
+  { key:'buktiReservasi',       label:'Bukti Reservasi',         type:'text'   },
+  { key:'nomorPO',              label:'Nomor PO',                type:'text'   },
+  { key:'invoiceKeHIT',         label:'Invoice Ke HIT',          type:'text'   },
+  { key:'buktiTerima',          label:'Bukti Terima',            type:'text'   },
+  { key:'analisisSA',           label:'Analisis SA',             type:'textarea' }
+];
+
+const GROUP_FIELDS = [
+  { key:'nomorSuratJalanP3',    label:'Nomor Surat Jalan ke P3',      type:'text'          },
+  { key:'dikonfirmasiTanggal',  label:'Dikonfirmasi Tanggal',         type:'date'          },
+  { key:'sjlKpgSby',            label:'Sjl KPG - SBY',                type:'text'          },
+  { key:'tglKirimKpgSby',       label:'Tgl Kirim KPG - SBY',          type:'date'          },
+  { key:'namaExpedisi',         label:'NAMA EXPEDISI',                type:'text'          },
+  { key:'noResiExpedisi',       label:'NO. RESI / TRACKING EXPEDISI', type:'text'          },
+  { key:'sjlSby',               label:'Sjl SBY',                      type:'text'          },
+  { key:'tglKirimSby',          label:'Tgl Kirim SBY',                type:'date'          },
+  { key:'noTrukDriver',         label:'NO TRUK | DRIVER',             type:'text'          },
+  { key:'diubahOleh',           label:'Diubah Oleh',                  type:'text'          },
+  { key:'diubahPada',           label:'Diubah Pada',                  type:'datetime-local'},
+  { key:'tcode',                label:'TCODE',                        type:'text'          }
+];
+
+const NO_BUKTI_KEY = '(Tanpa Bukti Transaksi Kirim)';
+const STORAGE_KEY  = 'kontrol_sparepart_v1';
+const META_KEY     = 'kontrol_sparepart_groupmeta_v1';
+
+/* =========================================================
+   AUTO TCODE — 3 huruf pertama dari segmen pertama
+   Bukti Transaksi Kirim.
+   Contoh: "KKG/KPG/SV/26/06/003" → "KKG"
+           "TRU/KPG/SV/26/06/006" → "TRU"
+           "TRX-2024-0012"        → "TRX"
+   ========================================================= */
+function deriveTcode(btk){
+  const s = String(btk || '').trim();
+  if(!s || s === NO_BUKTI_KEY) return '';
+  const firstSeg = s.split('/')[0].trim();
+  const clean = firstSeg.replace(/[^A-Za-z0-9]/g, '');
+  return clean.slice(0, 3).toUpperCase();
+}
+
+/* =========================================================
+   SEED
+   ========================================================= */
+function seed(){
+  return [
+    { id:1, nomor:'1', site:'JKT-01', buktiTransaksiKirim:'KKG/KPG/SV/26/08/003', tanggalReservasi:'2024-06-03',
+      buktiServiceCall:'SC-88213', buktiServiceJob:'SJ-4421', statusServiceCall:'Selesai',
+      partNumber:'PN-AX4510', deskripsiPartNumber:'Fan Cooling Unit 24V', qty:'2',
+      nomorSeriMaterial:'SN-778112', kembaliKePabrik:'Tidak', klaimKeHIT:'Ya',
+      lokasiReservasi:'Gudang Jakarta', lokasiStok:'Rak A-12', lokasiTujuan:'Site JKT-01',
+      buktiReservasi:'RSV-0091', nomorPO:'PO-4500123', invoiceKeHIT:'INV-HIT-0098',
+      buktiTerima:'BA-2201', analisisSA:'Kerusakan bearing, diganti unit baru' },
+    { id:2, nomor:'2', site:'JKT-01', buktiTransaksiKirim:'KKG/KPG/SV/26/08/003', tanggalReservasi:'2024-06-03',
+      buktiServiceCall:'SC-88213', buktiServiceJob:'SJ-4421', statusServiceCall:'Selesai',
+      partNumber:'PN-BX2201', deskripsiPartNumber:'Hydraulic Hose Assembly', qty:'3',
+      nomorSeriMaterial:'SN-990233', kembaliKePabrik:'Tidak', klaimKeHIT:'Ya',
+      lokasiReservasi:'Gudang Jakarta', lokasiStok:'Rak C-04', lokasiTujuan:'Site JKT-01',
+      buktiReservasi:'RSV-0091', nomorPO:'PO-4500123', invoiceKeHIT:'INV-HIT-0098',
+      buktiTerima:'BA-2201', analisisSA:'Hose bocor, diganti baru' },
+    { id:3, nomor:'3', site:'JKT-01', buktiTransaksiKirim:'KKG/KPG/SV/26/08/003', tanggalReservasi:'2024-06-03',
+      buktiServiceCall:'SC-88213', buktiServiceJob:'SJ-4421', statusServiceCall:'Selesai',
+      partNumber:'PN-CZ7788', deskripsiPartNumber:'Control Valve Solenoid', qty:'1',
+      nomorSeriMaterial:'SN-334901', kembaliKePabrik:'Ya', klaimKeHIT:'Ya',
+      lokasiReservasi:'Gudang Jakarta', lokasiStok:'Rak B-07', lokasiTujuan:'Site JKT-01',
+      buktiReservasi:'RSV-0091', nomorPO:'PO-4500123', invoiceKeHIT:'INV-HIT-0098',
+      buktiTerima:'BA-2201', analisisSA:'Solenoid mati total' },
+    { id:4, nomor:'4', site:'SBY-02', buktiTransaksiKirim:'TRX-2024-0012', tanggalReservasi:'2024-06-07',
+      buktiServiceCall:'SC-88240', buktiServiceJob:'SJ-4430', statusServiceCall:'Proses',
+      partNumber:'PN-DX1122', deskripsiPartNumber:'Drive Belt V-Type', qty:'4',
+      nomorSeriMaterial:'SN-551010', kembaliKePabrik:'Ya', klaimKeHIT:'Ya',
+      lokasiReservasi:'Gudang Surabaya', lokasiStok:'Rak D-01', lokasiTujuan:'Site SBY-02',
+      buktiReservasi:'RSV-0098', nomorPO:'PO-4500141', invoiceKeHIT:'-',
+      buktiTerima:'-', analisisSA:'Menunggu analisa dari pabrik' },
+    { id:5, nomor:'5', site:'MDN-03', buktiTransaksiKirim:'TRU/KPG/SV/26/06/006', tanggalReservasi:'2024-06-11',
+      buktiServiceCall:'SC-88255', buktiServiceJob:'SJ-4455', statusServiceCall:'Open',
+      partNumber:'PN-EY3344', deskripsiPartNumber:'Sensor Tekanan Oli', qty:'2',
+      nomorSeriMaterial:'SN-221188', kembaliKePabrik:'Tidak', klaimKeHIT:'Tidak',
+      lokasiReservasi:'Gudang Medan', lokasiStok:'Rak B-09', lokasiTujuan:'Site MDN-03',
+      buktiReservasi:'RSV-0102', nomorPO:'PO-4500155', invoiceKeHIT:'-',
+      buktiTerima:'-', analisisSA:'-' }
+  ];
+}
+
+function seedMeta(){
+  return {
+    'KKG/KPG/SV/26/08/003': {
+      nomorSuratJalanP3:'SJ-P3-2024-08-0031',
+      dikonfirmasiTanggal:'2024-06-03',
+      sjlKpgSby:'SJL/KPG-SBY/06/0031',
+      tglKirimKpgSby:'2024-06-04',
+      namaExpedisi:'JNE Express',
+      noResiExpedisi:'JNE-88231-00921',
+      sjlSby:'SJL/SBY-KDS/06/0044',
+      tglKirimSby:'2024-06-05',
+      noTrukDriver:'B 9021 XYZ | Pak Budi',
+      diubahOleh:'admin_jkt',
+      diubahPada:'2024-06-03T14:30',
+      tcode:'KKG'
+    },
+    'TRX-2024-0012': {
+      nomorSuratJalanP3:'SJ-P3-2024-06-0012',
+      dikonfirmasiTanggal:'2024-06-07',
+      sjlKpgSby:'SJL/KPG-SBY/06/0012',
+      tglKirimKpgSby:'2024-06-08',
+      namaExpedisi:'SiCepat',
+      noResiExpedisi:'SCP-009923',
+      sjlSby:'',
+      tglKirimSby:'',
+      noTrukDriver:'',
+      diubahOleh:'admin_sby',
+      diubahPada:'2024-06-07T09:15',
+      tcode:'TRX'
+    }
+  };
+}
+
+/* =========================================================
+   STATE
+   ========================================================= */
+let data = [];
+let groupMeta = {};
+let editingId = null;
+let currentDetailKey = null;
+let currentMetaKey = null;
+let importRows = [];
+let importMapping = {};
+let importMetaMap = {};
+
+const $   = s => document.querySelector(s);
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function toast(msg){
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._tm);
+  t._tm = setTimeout(()=>t.classList.remove('show'), 2000);
+}
+
+/* =========================================================
+   LOCAL STORAGE  (+ hook ke Firestore)
+   ========================================================= */
+function loadData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    data = raw ? JSON.parse(raw) : seed();
+  }catch(e){ data = seed(); }
+}
+function loadMeta(){
+  try{
+    const raw = localStorage.getItem(META_KEY);
+    groupMeta = raw ? JSON.parse(raw) : seedMeta();
+  }catch(e){ groupMeta = seedMeta(); }
+}
+function saveData(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }catch(e){}
+  if(fsReady && !suppressPush) pushToFirestore();
+}
+function saveMeta(){
+  try{ localStorage.setItem(META_KEY, JSON.stringify(groupMeta)); }catch(e){}
+  if(fsReady && !suppressPush) pushToFirestore();
+}
+
+/* =========================================================
+   GROUPING
+   ========================================================= */
+function groupKey(d){
+  const v = String(d.buktiTransaksiKirim || '').trim();
+  return v || NO_BUKTI_KEY;
+}
+function getMeta(key){
+  return groupMeta[key] || {};
+}
+function setMeta(key, obj){
+  groupMeta[key] = obj;
+  saveMeta();
+}
+
+function getFilteredData(){
+  const q      = $('#searchInput').value.trim().toLowerCase();
+  const site   = $('#siteFilter').value;
+  const status = $('#statusFilter').value;
+
+  return data.filter(d=>{
+    if(site   && (d.site || '') !== site) return false;
+    if(status && (d.statusServiceCall || '') !== status) return false;
+    if(q){
+      const hitRow = FIELDS.some(f => String(d[f.key] ?? '').toLowerCase().includes(q));
+      const meta = getMeta(groupKey(d));
+      const hitMeta = GROUP_FIELDS.some(f => String(meta[f.key] ?? '').toLowerCase().includes(q));
+      const hitTcode = deriveTcode(groupKey(d)).toLowerCase().includes(q);
+      return hitRow || hitMeta || hitTcode;
+    }
+    return true;
+  });
+}
+function getGroups(){
+  const filtered = getFilteredData();
+  const map = new Map();
+  filtered.forEach(d=>{
+    const k = groupKey(d);
+    if(!map.has(k)) map.set(k, []);
+    map.get(k).push(d);
+  });
+  return map;
+}
+
+/* =========================================================
+   MAIN TABLE HEADER
+   ========================================================= */
+function buildMainHead(){
+  const th = [
+    '<th style="min-width:240px">Bukti Transaksi Kirim</th>',
+    ...GROUP_FIELDS.map(f=>{
+      const cls = f.key === 'tcode' ? 'input-col tcode-col' : 'input-col';
+      return `<th class="${cls}">${esc(f.label)}</th>`;
+    }),
+    '<th style="text-align:center">Item</th>',
+    '<th class="aksi-col">Aksi</th>'
+  ].join('');
+  $('#mainThead').innerHTML = `<tr>${th}</tr>`;
+}
+
+/* =========================================================
+   RENDER MAIN TABLE
+   ========================================================= */
+function renderTable(){
+  const groups = getGroups();
+  const tbody  = $('#mainTbody');
+  const totalCols = 1 + GROUP_FIELDS.length + 2;
+
+  if(groups.size === 0){
+    const anyData = data.length > 0;
+    tbody.innerHTML = `<tr><td colspan="${totalCols}">
+      <div class="empty"><div class="big">${anyData ? '🔎' : '📭'}</div>
+      <div>${anyData
+        ? 'Tidak ada data yang cocok dengan pencarian / filter.'
+        : 'Belum ada data. Klik <b>＋ Tambah Data</b> atau <b>📥 Upload Excel</b> untuk mulai.'}</div>
+      </div>
+    </td></tr>`;
+  }else{
+    const entries = [...groups.entries()].sort((a,b)=> a[0].localeCompare(b[0]));
+    tbody.innerHTML = entries.map(([key, items])=>{
+      const meta = getMeta(key);
+      const totalQty = items.reduce((a,d)=> a + (parseInt(d.qty)||0), 0);
+      const sites = [...new Set(items.map(d=>d.site).filter(Boolean))].join(', ') || '-';
+
+      const metaCells = GROUP_FIELDS.map(f=>{
+        let raw = meta[f.key] ?? '';
+        let isAuto = false;
+
+        if(f.key === 'tcode' && !raw){
+          raw = deriveTcode(key);
+          if(raw) isAuto = true;
         }
 
-        // ========== RENDER HASIL ==========
-        function renderResult(data) {
-            // Status banner
-            document.getElementById('statusText').textContent = data.status;
-            document.getElementById('statusSub').textContent = data.statusSub;
-
-            // Icon berdasarkan status
-            const iconMap = { 'Terkirim': '✅', 'Dalam Perjalanan': '🚚', 'Menunggu Pickup': '⏳' };
-            document.getElementById('statusIcon').textContent = iconMap[data.status] || '📦';
-
-            // Progress
-            const fill = document.getElementById('progressFill');
-            fill.style.width = '0%';
-            setTimeout(() => { fill.style.width = data.progress + '%'; }, 100);
-
-            // Info grid
-            document.getElementById('resNumber').textContent = data.resNumber;
-            document.getElementById('resSender').textContent = data.sender;
-            document.getElementById('resReceiver').textContent = data.receiver;
-            document.getElementById('resOrigin').textContent = data.origin;
-            document.getElementById('resDestination').textContent = data.destination;
-            document.getElementById('resDate').textContent = data.date;
-            document.getElementById('resEta').textContent = data.eta;
-            document.getElementById('resWeight').textContent = data.weight;
-
-            // Timeline
-            const timeline = document.getElementById('timeline');
-            timeline.innerHTML = '';
-            data.timeline.forEach((item, i) => {
-                const div = document.createElement('div');
-                div.className = 'timeline-item ' + (item.status === 'done' ? 'done' : item.status === 'active' ? 'active' : '');
-                div.innerHTML = `
-                    <div class="timeline-time">${item.time}</div>
-                    <div class="timeline-title">${item.title}</div>
-                    <div class="timeline-desc">${item.desc}</div>
-                `;
-                timeline.appendChild(div);
-
-                // Animasi stagger
-                div.style.opacity = '0';
-                div.style.transform = 'translateX(-10px)';
-                setTimeout(() => {
-                    div.style.transition = 'all 0.3s ease';
-                    div.style.opacity = '1';
-                    div.style.transform = 'translateX(0)';
-                }, i * 80);
-            });
-
-            result.style.display = 'block';
+        let display;
+        if(raw === ''){
+          display = `<span class="meta-empty">—</span>`;
+        }else if(f.type === 'datetime-local'){
+          display = esc(String(raw).replace('T',' '));
+        }else{
+          display = esc(raw);
         }
 
-        // ========== INISIALISASI ==========
-        // Set example resi K2601571-236 sebagai default untuk demo otomatis
-        // Uncomment baris di bawah jika ingin auto-track saat halaman dimuat:
-        // window.addEventListener('load', () => { resiInput.value = 'K2601571-236'; autoTrack('K2601571-236'); });
-    </script>
+        const cls = 'editable-cell'
+          + (f.key === 'tcode' ? ' tcode-cell' : '')
+          + (isAuto ? ' auto' : '');
+        const tip = isAuto
+          ? 'TCODE otomatis dari Bukti Transaksi Kirim — klik untuk ubah manual'
+          : 'Klik untuk input manual';
+
+        return `<td class="${cls}"
+                    data-key="${esc(key)}"
+                    data-field="${f.key}"
+                    data-type="${f.type}"
+                    data-auto="${isAuto ? '1' : '0'}"
+                    title="${esc(tip)}">${display}</td>`;
+      }).join('');
+
+      return `<tr data-key="${esc(key)}">
+        <td>
+          <div class="btk-cell">
+            <div class="btk-icon">📄</div>
+            <div>
+              <div class="btk-text">${esc(key)}</div>
+              <div class="btk-sub">Site: ${esc(sites)}</div>
+            </div>
+          </div>
+        </td>
+        ${metaCells}
+        <td class="item-cell"><span class="item-badge">${items.length} item · Qty ${totalQty}</span></td>
+        <td class="aksi-col">
+          <button class="btn-icon meta-btn" data-key="${esc(key)}" title="Form lengkap info pengiriman">✏ Form</button>
+          <button class="btn-icon view-btn" data-key="${esc(key)}" title="Lihat detail item">👁 Detail</button>
+        </td>
+      </tr>`;
+    }).join('');
+
+    tbody.querySelectorAll('tr[data-key]').forEach(tr=>{
+      tr.addEventListener('click', (e)=>{
+        if(e.target.closest('.editable-cell')) return;
+        if(e.target.closest('.btn-icon')) return;
+        openDetail(tr.dataset.key);
+      });
+    });
+
+    tbody.querySelectorAll('.meta-btn').forEach(b=>{
+      b.addEventListener('click', e=>{
+        e.stopPropagation();
+        openMetaModal(b.dataset.key);
+      });
+    });
+
+    tbody.querySelectorAll('.view-btn').forEach(b=>{
+      b.addEventListener('click', e=>{
+        e.stopPropagation();
+        openDetail(b.dataset.key);
+      });
+    });
+
+    tbody.querySelectorAll('.editable-cell').forEach(td=>{
+      td.addEventListener('click', e=>{
+        e.stopPropagation();
+        startEditCell(td);
+      });
+    });
+  }
+  updateStats();
+  refreshSiteFilter();
+}
+
+/* =========================================================
+   INLINE CELL EDIT
+   ========================================================= */
+function startEditCell(td){
+  if(td.classList.contains('editing')) return;
+
+  const key      = td.dataset.key;
+  const fieldKey = td.dataset.field;
+  const type     = td.dataset.type;
+  const fieldDef = GROUP_FIELDS.find(f => f.key === fieldKey);
+  const meta     = getMeta(key);
+  let   curVal   = meta[fieldKey] || '';
+
+  if(fieldKey === 'tcode' && !curVal){
+    curVal = deriveTcode(key);
+  }
+
+  const prevHtml = td.innerHTML;
+
+  let inputType = 'text';
+  if(type === 'date') inputType = 'date';
+  else if(type === 'datetime-local') inputType = 'datetime-local';
+  else if(type === 'number') inputType = 'number';
+
+  td.classList.add('editing');
+  td.innerHTML = `<input class="cell-input" type="${inputType}" value="${esc(curVal)}"
+                        placeholder="Ketik ${esc(fieldDef?.label || fieldKey)}...">`;
+
+  const inp = td.querySelector('input');
+  inp.focus();
+  try{ inp.select(); }catch(e){}
+
+  const finish = (save)=>{
+    td.classList.remove('editing');
+
+    if(save){
+      const newVal = inp.value.trim();
+      const m = getMeta(key);
+      if(newVal === ''){
+        delete m[fieldKey];
+      }else{
+        m[fieldKey] = newVal;
+      }
+      if(currentUser && fieldKey !== 'diubahOleh'){
+        m.diubahOleh = emailToUsername(currentUser.email || '');
+      }
+      setMeta(key, m);
+
+      let disp;
+      let isAuto = false;
+      if(fieldKey === 'tcode' && newVal === ''){
+        const auto = deriveTcode(key);
+        if(auto){ disp = esc(auto); isAuto = true; }
+        else disp = '<span class="meta-empty">—</span>';
+      }else if(newVal === ''){
+        disp = '<span class="meta-empty">—</span>';
+      }else if(type === 'datetime-local'){
+        disp = esc(String(newVal).replace('T',' '));
+      }else{
+        disp = esc(newVal);
+      }
+      td.innerHTML = disp;
+      td.dataset.auto = isAuto ? '1' : '0';
+      td.classList.toggle('auto', isAuto);
+
+      toast('💾 Tersimpan');
+    }else{
+      td.innerHTML = prevHtml;
+    }
+  };
+
+  inp.addEventListener('keydown', ev=>{
+    if(ev.key === 'Enter'){
+      ev.preventDefault();
+      finish(true);
+    }else if(ev.key === 'Escape'){
+      ev.preventDefault();
+      finish(false);
+    }else if(ev.key === 'Tab'){
+      finish(true);
+    }
+  });
+  inp.addEventListener('blur', ()=>{
+    if(td.classList.contains('editing')) finish(true);
+  });
+  inp.addEventListener('click', ev=> ev.stopPropagation());
+}
+
+/* =========================================================
+   STATS & FILTER
+   ========================================================= */
+function updateStats(){
+  const filtered = getFilteredData();
+  const groups   = getGroups();
+  $('#stTotal').textContent = groups.size;
+  $('#stQty').textContent   = filtered.reduce((a,d)=> a + (parseInt(d.qty)||0), 0);
+  $('#stOpen').textContent  = filtered.filter(d=>['Open','Proses'].includes(d.statusServiceCall)).length;
+  $('#stPabrik').textContent= filtered.filter(d=>d.kembaliKePabrik === 'Ya').length;
+}
+function refreshSiteFilter(){
+  const sel = $('#siteFilter');
+  const cur = sel.value;
+  const sites = [...new Set(data.map(d=>d.site).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">Semua Site</option>' +
+    sites.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');
+  if(sites.includes(cur)) sel.value = cur;
+}
+
+/* =========================================================
+   META MODAL
+   ========================================================= */
+function buildMetaForm(){
+  $('#metaForm').innerHTML = GROUP_FIELDS.map(f=>{
+    let input;
+    let hint = '';
+    if(f.key === 'tcode'){
+      hint = `<div class="field-hint">⚡ Otomatis terisi 3 huruf pertama dari Bukti Transaksi Kirim (bisa diubah manual)</div>`;
+    }
+    if(f.type === 'select'){
+      input = `<select name="${f.key}"><option value="">-- Pilih --</option>
+        ${(f.options||[]).map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('')}</select>`;
+    }else if(f.type === 'textarea'){
+      input = `<textarea name="${f.key}" placeholder="${esc(f.label)}"></textarea>`;
+    }else{
+      input = `<input type="${f.type}" name="${f.key}" placeholder="${esc(f.label)}">`;
+    }
+    return `<div class="field"><label>${esc(f.label)}</label>${input}${hint}</div>`;
+  }).join('');
+}
+function openMetaModal(key){
+  currentMetaKey = key;
+  $('#metaKeyDisplay').textContent = key;
+  const form = $('#metaForm');
+  form.reset();
+  const meta = getMeta(key);
+  GROUP_FIELDS.forEach(f=>{
+    const el = form.elements[f.key];
+    if(!el) return;
+    let v = meta[f.key] ?? '';
+    if(f.key === 'tcode' && !v){
+      v = deriveTcode(key);
+    }
+    el.value = v;
+  });
+  if(currentUser && form.elements['diubahOleh'] && !form.elements['diubahOleh'].value){
+    form.elements['diubahOleh'].value = emailToUsername(currentUser.email || '');
+  }
+  $('#metaOverlay').classList.add('show');
+  setTimeout(()=>{ const el = form.elements['nomorSuratJalanP3']; if(el) el.focus(); }, 80);
+}
+function closeMetaModal(){
+  $('#metaOverlay').classList.remove('show');
+  currentMetaKey = null;
+}
+function saveMetaRecord(){
+  if(!currentMetaKey) return;
+  const form = $('#metaForm');
+  const obj = {};
+  GROUP_FIELDS.forEach(f=>{
+    const el = form.elements[f.key];
+    obj[f.key] = el ? el.value.trim() : '';
+  });
+  setMeta(currentMetaKey, obj);
+  renderTable();
+  closeMetaModal();
+  toast('✅ Info pengiriman disimpan');
+}
+
+/* =========================================================
+   DETAIL MODAL — NOMOR URUT BARU (1, 2, 3, …)
+   ========================================================= */
+function openDetail(key){
+  currentDetailKey = key;
+  renderDetail();
+  $('#detailOverlay').classList.add('show');
+  const wrap = $('#detailSheetWrap');
+  if(wrap) wrap.scrollLeft = 0;
+}
+function closeDetail(){
+  $('#detailOverlay').classList.remove('show');
+  currentDetailKey = null;
+}
+function renderDetail(){
+  if(!currentDetailKey) return;
+  const items = data.filter(d => groupKey(d) === currentDetailKey);
+
+  $('#detailKey').textContent = currentDetailKey;
+  $('#detailCount').textContent = items.length + ' item';
+
+  $('#detailThead').innerHTML =
+    '<tr>' + FIELDS.map(f=>`<th>${esc(f.label)}</th>`).join('') +
+    '<th class="col-aksi">Aksi</th></tr>';
+
+  if(items.length === 0){
+    $('#detailTbody').innerHTML =
+      `<tr><td colspan="${FIELDS.length + 1}"
+        style="padding:40px;text-align:center;color:#64748b">
+        Tidak ada item pada bukti transaksi ini.</td></tr>`;
+    $('#detailSummary').innerHTML = '-';
+    return;
+  }
+
+  $('#detailTbody').innerHTML = items.map((d, idx)=>{
+    const tds = FIELDS.map(f=>{
+      const v = d[f.key] ?? '';
+
+      if(f.key === 'nomor'){
+        return `<td class="qty-cell" style="color:#2563eb;font-weight:700">${idx + 1}</td>`;
+      }
+
+      if(f.key === 'statusServiceCall'){
+        const cls = String(v).toLowerCase();
+        return `<td><span class="pill ${cls}">${esc(v || '-')}</span></td>`;
+      }
+      if(f.key === 'kembaliKePabrik' || f.key === 'klaimKeHIT'){
+        const cls = String(v).toLowerCase() === 'ya' ? 'ya' : 'tidak';
+        return `<td><span class="yn ${cls}">${esc(v || '-')}</span></td>`;
+      }
+      if(f.key === 'qty') return `<td class="qty-cell">${esc(v || '0')}</td>`;
+      if(f.key === 'partNumber') return `<td class="pn-cell">${esc(v || '-')}</td>`;
+      if(f.key === 'nomorPO') return `<td class="po-cell">${esc(v || '-')}</td>`;
+      if(f.key === 'deskripsiPartNumber') return `<td class="desc-cell" title="${esc(v)}">${esc(v || '-')}</td>`;
+      if(f.key === 'analisisSA') return `<td class="ana-cell" title="${esc(v)}">${esc(v || '-')}</td>`;
+      return `<td>${esc(v === '' ? '-' : v)}</td>`;
+    }).join('');
+
+    return `<tr data-id="${d.id}">${tds}
+      <td class="col-aksi">
+        <button class="btn-icon edit-btn" data-id="${d.id}">✏ Edit</button>
+        <button class="btn-icon danger del-btn" data-id="${d.id}">🗑 Hapus</button>
+      </td></tr>`;
+  }).join('');
+
+  $('#detailTbody').querySelectorAll('.edit-btn').forEach(b=>{
+    b.addEventListener('click', e=>{
+      e.stopPropagation();
+      const id = Number(b.dataset.id);
+      closeDetail();
+      openModal(id);
+    });
+  });
+  $('#detailTbody').querySelectorAll('.del-btn').forEach(b=>{
+    b.addEventListener('click', e=>{
+      e.stopPropagation();
+      const id = Number(b.dataset.id);
+      const rec = data.find(x=>x.id===id);
+      if(!rec) return;
+      if(!confirm(`Hapus item "${rec.partNumber}"?`)) return;
+      data = data.filter(x=>x.id !== id);
+      saveData();
+      renderTable();
+      if(data.filter(d=>groupKey(d)===currentDetailKey).length === 0){
+        closeDetail();
+        toast('🗑 Item dihapus — grup kosong, kembali ke daftar');
+      }else{
+        renderDetail();
+        toast('🗑 Item dihapus');
+      }
+    });
+  });
+
+  const totalQty = items.reduce((a,d)=> a + (parseInt(d.qty)||0), 0);
+  $('#detailSummary').innerHTML = `Total <b>${items.length}</b> item · <b>${totalQty}</b> qty`;
+}
+
+/* =========================================================
+   FORM RECORD ITEM
+   ========================================================= */
+function buildForm(){
+  $('#dataForm').innerHTML = FIELDS.map(f=>{
+    const wide = (f.type === 'textarea') ? ' full' : '';
+    let input;
+    if(f.type === 'select'){
+      input = `<select name="${f.key}">
+        <option value="">-- Pilih --</option>
+        ${f.options.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('')}
+      </select>`;
+    }else if(f.type === 'textarea'){
+      input = `<textarea name="${f.key}" placeholder="Catatan analisis SA..."></textarea>`;
+    }else{
+      input = `<input type="${f.type}" name="${f.key}" placeholder="${esc(f.label)}">`;
+    }
+    return `<div class="field${wide}"><label>${esc(f.label)}</label>${input}</div>`;
+  }).join('');
+}
+
+function openModal(id = null, preset = null){
+  editingId = id;
+  const form = $('#dataForm');
+  form.reset();
+
+  if(id === null){
+    $('#modalTitle').textContent = 'Tambah Data Pengiriman';
+    $('#deleteBtn').style.display = 'none';
+    const maxNo = data.reduce((m,d)=> Math.max(m, parseInt(d.nomor)||0), 0);
+    form.elements['nomor'].value = String(maxNo + 1);
+    if(preset && preset.buktiTransaksiKirim){
+      form.elements['buktiTransaksiKirim'].value = preset.buktiTransaksiKirim;
+    }
+  }else{
+    $('#modalTitle').textContent = 'Edit Data Pengiriman';
+    $('#deleteBtn').style.display = 'inline-flex';
+    const d = data.find(x=>x.id === id);
+    if(!d) return;
+    FIELDS.forEach(f=>{
+      const el = form.elements[f.key];
+      if(el) el.value = d[f.key] ?? '';
+    });
+  }
+  $('#overlay').classList.add('show');
+  setTimeout(()=>{ const el = form.elements['site']; if(el) el.focus(); }, 80);
+}
+function closeModal(){
+  $('#overlay').classList.remove('show');
+  editingId = null;
+}
+function saveRecord(){
+  const form = $('#dataForm');
+  const obj = {};
+  FIELDS.forEach(f=>{
+    const el = form.elements[f.key];
+    obj[f.key] = el ? el.value.trim() : '';
+  });
+  if(!obj.site){ toast('⚠️ Site wajib diisi'); form.elements['site'].focus(); return; }
+  if(!obj.partNumber){ toast('⚠️ Part Number wajib diisi'); form.elements['partNumber'].focus(); return; }
+
+  if(editingId === null){
+    const newId = data.length ? Math.max(...data.map(d=>d.id)) + 1 : 1;
+    obj.id = newId;
+    if(!obj.nomor) obj.nomor = String(newId);
+    data.push(obj);
+    toast('✅ Data berhasil ditambahkan');
+  }else{
+    const idx = data.findIndex(d=>d.id === editingId);
+    obj.id = editingId;
+    data[idx] = obj;
+    toast('✅ Data berhasil diperbarui');
+  }
+
+  const gk = groupKey(obj);
+  if(gk && gk !== NO_BUKTI_KEY){
+    const m = getMeta(gk);
+    if(!m.tcode){
+      const derived = deriveTcode(gk);
+      if(derived){
+        m.tcode = derived;
+        setMeta(gk, m);
+      }
+    }
+  }
+
+  saveData();
+  renderTable();
+  closeModal();
+}
+function deleteRecord(){
+  if(editingId === null) return;
+  const d = data.find(x=>x.id === editingId);
+  if(!confirm(`Hapus data pengiriman "${d.partNumber}" (${d.site})?`)) return;
+  data = data.filter(x=>x.id !== editingId);
+  saveData();
+  renderTable();
+  closeModal();
+  toast('🗑 Data dihapus');
+}
+
+/* =========================================================
+   EXCEL EXPORT
+   ========================================================= */
+function getExportFields(){
+  const out = [];
+  FIELDS.forEach(f => out.push(f));
+  GROUP_FIELDS.forEach(gf => out.push({ ...gf, isMeta:true }));
+  return out;
+}
+
+function recordToLabeled(d){
+  const meta = getMeta(groupKey(d));
+  const o = {};
+  getExportFields().forEach(f=>{
+    let v;
+    if(f.isMeta){
+      v = meta[f.key] ?? '';
+      if(f.key === 'tcode' && !v){
+        v = deriveTcode(groupKey(d));
+      }
+      if(f.type === 'datetime-local' && v) v = String(v).replace('T',' ');
+    }else{
+      v = d[f.key] ?? '';
+      if(f.key === 'tanggalReservasi' && v){
+        const dt = new Date(v);
+        if(!isNaN(dt)) v = dt.toISOString().slice(0,10);
+      }
+    }
+    o[f.label] = v;
+  });
+  return o;
+}
+function autoWidths(rows, headers){
+  return headers.map(h=>{
+    const maxLen = Math.max(
+      String(h).length,
+      ...rows.map(r => String(r[h] ?? '').length)
+    );
+    return { wch: Math.min(Math.max(maxLen + 2, 10), 45) };
+  });
+}
+function exportExcel(){
+  const filtered = getFilteredData();
+  if(!filtered.length){ toast('⚠️ Tidak ada data untuk di-export'); return; }
+
+  const headers = getExportFields().map(f=>f.label);
+  const rows = filtered.map(recordToLabeled);
+
+  const ws = XLSX.utils.json_to_sheet(rows, { header: headers });
+  ws['!cols'] = autoWidths(rows, headers);
+  ws['!autofilter'] = { ref: XLSX.utils.encode_range({
+    s:{r:0,c:0}, e:{r:rows.length, c:headers.length-1}
+  })};
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Data Sparepart');
+
+  const info = [
+    ['Laporan', 'Kontrol Pengiriman Sparepart'],
+    ['Mode Export', 'Data Lengkap (per Item)'],
+    ['Tanggal Export', new Date().toLocaleString('id-ID')],
+    ['Diekspor Oleh', currentUser ? emailToUsername(currentUser.email) : '-'],
+    ['Total Baris', filtered.length],
+    ['Total Qty', filtered.reduce((a,d)=> a + (parseInt(d.qty)||0), 0)],
+    ['Total Grup Bukti Transaksi', new Set(filtered.map(groupKey)).size],
+    ['Filter Site', $('#siteFilter').value || 'Semua'],
+    ['Filter Status', $('#statusFilter').value || 'Semua'],
+    ['Kata Kunci', $('#searchInput').value.trim() || '-'],
+    [''],
+    ['Catatan', 'Kolom info pengiriman berada di paling kanan (setelah Analisis SA)'],
+    ['Catatan', 'TCODE otomatis = 3 huruf pertama dari Bukti Transaksi Kirim']
+  ];
+  const wsInfo = XLSX.utils.aoa_to_sheet(info);
+  wsInfo['!cols'] = [{wch:26},{wch:56}];
+  XLSX.utils.book_append_sheet(wb, wsInfo, 'Info');
+
+  const tgl = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `kontrol-pengiriman-sparepart-${tgl}.xlsx`);
+  toast('⬇ File Excel berhasil diunduh');
+}
+
+/* =========================================================
+   EXPORT — TAMPILAN DEPAN (per Grup / Bukti Transaksi Kirim)
+   ========================================================= */
+function exportFrontViewExcel(){
+  const groups = getGroups();
+  if(!groups.size){ toast('⚠️ Tidak ada data untuk di-export'); return; }
+
+  const entries = [...groups.entries()].sort((a,b)=> a[0].localeCompare(b[0]));
+
+  const headers = [
+    'Bukti Transaksi Kirim',
+    'Site',
+    ...GROUP_FIELDS.map(f => f.label),
+    'Jumlah Item',
+    'Total Qty'
+  ];
+
+  const rows = entries.map(([key, items])=>{
+    const meta     = getMeta(key);
+    const totalQty = items.reduce((a,d)=> a + (parseInt(d.qty)||0), 0);
+    const sites    = [...new Set(items.map(d=>d.site).filter(Boolean))].join(', ') || '-';
+
+    const o = {};
+    o['Bukti Transaksi Kirim'] = key;
+    o['Site'] = sites;
+
+    GROUP_FIELDS.forEach(f=>{
+      let v = meta[f.key] ?? '';
+      if(f.key === 'tcode' && !v) v = deriveTcode(key);
+      if(f.type === 'datetime-local' && v) v = String(v).replace('T',' ');
+      o[f.label] = v;
+    });
+
+    o['Jumlah Item'] = items.length;
+    o['Total Qty']   = totalQty;
+    return o;
+  });
+
+  const ws = XLSX.utils.json_to_sheet(rows, { header: headers });
+  ws['!cols'] = autoWidths(rows, headers);
+  ws['!autofilter'] = { ref: XLSX.utils.encode_range({
+    s:{r:0,c:0}, e:{r:rows.length, c:headers.length-1}
+  })};
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Tampilan Depan');
+
+  const totalItems = entries.reduce((a,[,items])=> a + items.length, 0);
+  const grandQty   = entries.reduce(
+    (a,[,items])=> a + items.reduce((s,d)=> s+(parseInt(d.qty)||0), 0), 0
+  );
+
+  const info = [
+    ['Laporan', 'Kontrol Pengiriman Sparepart — Tampilan Depan'],
+    ['Mode Export', 'Tampilan Depan (per Grup / Bukti Transaksi Kirim)'],
+    ['Tanggal Export', new Date().toLocaleString('id-ID')],
+    ['Diekspor Oleh', currentUser ? emailToUsername(currentUser.email) : '-'],
+    ['Total Grup Bukti Transaksi', rows.length],
+    ['Total Item', totalItems],
+    ['Total Qty', grandQty],
+    ['Filter Site', $('#siteFilter').value || 'Semua'],
+    ['Filter Status', $('#statusFilter').value || 'Semua'],
+    ['Kata Kunci', $('#searchInput').value.trim() || '-'],
+    [''],
+    ['Catatan', 'Satu baris = satu Bukti Transaksi Kirim (grup)'],
+    ['Catatan', 'Kolom info pengiriman mengikuti nilai yang tampil di tabel utama'],
+    ['Catatan', 'TCODE otomatis = 3 huruf pertama dari Bukti Transaksi Kirim']
+  ];
+  const wsInfo = XLSX.utils.aoa_to_sheet(info);
+  wsInfo['!cols'] = [{wch:28},{wch:56}];
+  XLSX.utils.book_append_sheet(wb, wsInfo, 'Info');
+
+  const tgl = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `kontrol-pengiriman-sparepart-tampilan-depan-${tgl}.xlsx`);
+  toast('⬇ File Excel tampilan depan berhasil diunduh');
+}
+
+function exportGroupExcel(){
+  if(!currentDetailKey) return;
+  const items = data.filter(d => groupKey(d) === currentDetailKey);
+  if(!items.length){ toast('⚠️ Tidak ada data pada grup ini'); return; }
+
+  const headers = getExportFields().map(f=>f.label);
+  const rows = items.map((d, idx)=>{
+    const o = recordToLabeled(d);
+    o['Nomor'] = idx + 1;
+    return o;
+  });
+
+  const ws = XLSX.utils.json_to_sheet(rows, { header: headers });
+  ws['!cols'] = autoWidths(rows, headers);
+  ws['!autofilter'] = { ref: XLSX.utils.encode_range({
+    s:{r:0,c:0}, e:{r:rows.length, c:headers.length-1}
+  })};
+
+  const wb = XLSX.utils.book_new();
+  let sheetName = String(currentDetailKey).replace(/[\\\/\?\*\[\]:]/g,'-').slice(0,31);
+  if(!sheetName) sheetName = 'Detail';
+  XLSX.utils.book_append_sheet(wb, ws, sheetName);
+
+  const safeFile = String(currentDetailKey).replace(/[\\\/\?\*\[\]:]/g,'-');
+  XLSX.writeFile(wb, `sparepart-${safeFile}.xlsx`);
+  toast('⬇ File Excel grup berhasil diunduh');
+}
+
+function downloadTemplateExcel(){
+  const allFields = getExportFields();
+  const headers = allFields.map(f=>f.label);
+  const example = {};
+  allFields.forEach(f=>{
+    const k = f.key;
+    if(k === 'nomor') example[f.label] = 1;
+    else if(k === 'site') example[f.label] = 'JKT-01';
+    else if(k === 'buktiTransaksiKirim') example[f.label] = 'KKG/KPG/SV/26/08/003';
+    else if(k === 'nomorSuratJalanP3') example[f.label] = 'SJ-P3-2024-08-0031';
+    else if(k === 'dikonfirmasiTanggal') example[f.label] = '2024-06-03';
+    else if(k === 'sjlKpgSby') example[f.label] = 'SJL/KPG-SBY/06/0031';
+    else if(k === 'tglKirimKpgSby') example[f.label] = '2024-06-04';
+    else if(k === 'namaExpedisi') example[f.label] = 'JNE Express';
+    else if(k === 'noResiExpedisi') example[f.label] = 'JNE-88231-00921';
+    else if(k === 'sjlSby') example[f.label] = 'SJL/SBY-KDS/06/0044';
+    else if(k === 'tglKirimSby') example[f.label] = '2024-06-05';
+    else if(k === 'noTrukDriver') example[f.label] = 'B 9021 XYZ | Pak Budi';
+    else if(k === 'diubahOleh') example[f.label] = 'admin_jkt';
+    else if(k === 'diubahPada') example[f.label] = '2024-06-03 14:30';
+    else if(k === 'tcode') example[f.label] = 'KKG';
+    else if(k === 'statusServiceCall') example[f.label] = 'Open';
+    else if(k === 'kembaliKePabrik' || k === 'klaimKeHIT') example[f.label] = 'Tidak';
+    else if(k === 'qty') example[f.label] = 1;
+    else if(k === 'tanggalReservasi') example[f.label] = new Date().toISOString().slice(0,10);
+    else example[f.label] = '';
+  });
+
+  const ws = XLSX.utils.json_to_sheet([example], { header: headers });
+  ws['!cols'] = autoWidths([example], headers);
+
+  const guide = [
+    ['PETUNJUK PENGGUNAAN TEMPLATE'],
+    [''],
+    ['1. Isi data mulai dari baris ke-2 (baris ke-1 adalah header).'],
+    ['2. Jangan mengubah nama kolom pada baris pertama.'],
+    ['3. Kolom "Bukti Transaksi Kirim" berfungsi sebagai kunci pengelompokan.'],
+    ['4. Kolom INFO PENGIRIMAN ada di PALING KANAN (setelah Analisis SA):'],
+    ['   Nomor Surat Jalan ke P3 s/d TCODE — berlaku PER GRUP Bukti Transaksi Kirim.'],
+    ['   Cukup isi di salah satu baris, sistem memakai nilai pertama non-kosong.'],
+    ['5. Kolom TCODE otomatis terisi = 3 huruf pertama dari segmen pertama'],
+    ['   "Bukti Transaksi Kirim".'],
+    ['   Contoh: "KKG/KPG/SV/26/06/003" → "KKG", "TRU/KPG/SV/26/06/006" → "TRU".'],
+    ['   Kolom TCODE pada file boleh dikosongkan (akan diisi otomatis).'],
+    ['6. Format tanggal: YYYY-MM-DD. Untuk "Diubah Pada": YYYY-MM-DD HH:MM.'],
+    [''],
+    ['Daftar Kolom (urutan di file Excel):'],
+    ...headers.map((h,i)=>[`${i+1}. ${h}`])
+  ];
+  const wsGuide = XLSX.utils.aoa_to_sheet(guide);
+  wsGuide['!cols'] = [{wch:60}];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Template');
+  XLSX.utils.book_append_sheet(wb, wsGuide, 'Petunjuk');
+
+  XLSX.writeFile(wb, 'template-upload-sparepart.xlsx');
+  toast('📄 Template Excel berhasil diunduh');
+}
+
+/* =========================================================
+   IMPORT EXCEL
+   ========================================================= */
+function norm(str){
+  return String(str || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+const HEADER_ALIASES = {
+  nomor:               ['nomor','no','nomer','nomorurut','no.','no'],
+  site:                ['site','sitelokasi','lokasisite','lokasi'],
+  buktiTransaksiKirim: ['buktitransaksikirim','buktikirim','buktitransaksi','transactionproof','nobuktikirim','nobukti'],
+  tanggalReservasi:    ['tanggalreservasi','tglreservasi','tglresv','reservationdate'],
+  buktiServiceCall:    ['buktiservicecall','servicecall','sc','bukti_sc'],
+  buktiServiceJob:     ['buktiservicejob','servicejob','sj','bukti_sj'],
+  statusServiceCall:   ['statusservicecall','statussc','status','statuscall'],
+  partNumber:          ['partnumber','partno','partnum','pn','part_number','kodebarang','kode_part'],
+  deskripsiPartNumber: ['deskripsipartnumber','deskripsi','description','namapart','namabarang','deskripsipart'],
+  qty:                 ['qty','quantity','jumlah','kuantitas','jml'],
+  nomorSeriMaterial:   ['nomorserimaterial','nomorseri','serialnumber','serialno','sn','nomor_seri','noseri'],
+  kembaliKePabrik:     ['kembalikepabrik','kembalipabrik','returpabrik','retur','returnpabrik'],
+  klaimKeHIT:          ['klaimkeh','klaimkehit','klaim','claimhit','claim'],
+  lokasiReservasi:     ['lokasireservasi','lokreservasi','lokresv','reservasilokasi'],
+  lokasiStok:          ['lokasistok','lokstok','lokasigudang','gudang','rak'],
+  lokasiTujuan:        ['lokasitujuan','loktujuan','tujuan','destination','lokasikirim'],
+  buktiReservasi:      ['buktireservasi','bukti_reservasi','reservationproof','reservasibukti'],
+  nomorPO:             ['nomorpo','nopo','no_po','po','purchaseorder'],
+  invoiceKeHIT:        ['invoicekeh','invoicekehit','invoice','invoicehit'],
+  buktiTerima:         ['bukti terima','bukti_terima','buktiterima','terima','penerimaan','bast','ba'],
+  analisisSA:          ['analisissa','analisis','analisysa','catatan','keterangan','note']
+};
+
+const META_ALIASES = {
+  nomorSuratJalanP3:   ['nomorsuratjalanp3','nomorsuratjalan kep3','nomorsuratjalan',
+                        'nosuratjalanp3','nosj','nosuratjalan','suratjalan','nomorsj'],
+  dikonfirmasiTanggal: ['dikonfirmasitanggal','tglkonfirmasi','tanggaldikonfirmasi'],
+  sjlKpgSby:           ['sjlkpgsby','sjlkpg-sby','suratjalankpgsby','sjlkpgsby',
+                        'sjl_kpg_sby','suratjalan_kpg_sby'],
+  tglKirimKpgSby:      ['tglkirimkpgsby','tglkirimkpg-sby','tanggal kirim kpg sby','tgl_kirim_kpg_sby'],
+  namaExpedisi:        ['namaexpedisi','expedisi','ekspedisi','kurir'],
+  noResiExpedisi:      ['no resi / tracking expedisi','no resi expedisi','noresiexpedisi',
+                        'noresi','nomeresi','no_resi','resi','notracking','nomeresi',
+                        'no tracking expedisi','noresi/trackingexpedisi'],
+  sjlSby:              ['sjlsby','sjl_sby','suratjalansby','suratjalan_sby'],
+  tglKirimSby:         ['tglkirimsby','tgl_kirim_sby','tanggal kirim sby'],
+  noTrukDriver:        ['no truk | driver','notrukdriver','notruk|driver','notruk','nodriver',
+                        'nopol','nopol|driver','notruk_driver'],
+  diubahOleh:          ['diubaholeh','diubah_oleh','editor','modifiedby'],
+  diubahPada:          ['diubahpada','diubah_pada','modifiedat','tanggalubah'],
+  tcode:               ['tcode','t_code','kodetransaksi']
+};
+
+function mapHeaders(headers){
+  const map = {};
+  const used = new Set();
+  headers.forEach((h, idx)=>{
+    const n = norm(h);
+    if(!n) return;
+    for(const f of FIELDS){
+      if(used.has(f.key)) continue;
+      const aliases = HEADER_ALIASES[f.key] || [];
+      if(aliases.some(a => norm(a) === n)){ map[f.key] = idx; used.add(f.key); return; }
+    }
+    for(const f of FIELDS){
+      if(used.has(f.key)) continue;
+      if(norm(f.label) === n){ map[f.key] = idx; used.add(f.key); return; }
+    }
+  });
+  return map;
+}
+function mapMetaHeaders(headers){
+  const map = {};
+  const used = new Set();
+  headers.forEach((h, idx)=>{
+    const n = norm(h);
+    if(!n) return;
+    for(const f of GROUP_FIELDS){
+      if(used.has(f.key)) continue;
+      const aliases = META_ALIASES[f.key] || [];
+      if(aliases.some(a => norm(a) === n)){ map[f.key] = idx; used.add(f.key); return; }
+    }
+    for(const f of GROUP_FIELDS){
+      if(used.has(f.key)) continue;
+      if(norm(f.label) === n){ map[f.key] = idx; used.add(f.key); return; }
+    }
+  });
+  return map;
+}
+
+function openImportModal(){
+  importRows = [];
+  importMapping = {};
+  importMetaMap = {};
+  $('#fileInput').value = '';
+  $('#fileChip').classList.remove('show');
+  $('#previewBox').classList.remove('show');
+  $('#mappingWrap').style.display = 'none';
+  $('#importAlert').classList.remove('show');
+  $('#importConfirmBtn').disabled = true;
+  document.querySelector('input[name="importMode"][value="append"]').checked = true;
+  $('#importOverlay').classList.add('show');
+}
+function closeImportModal(){
+  $('#importOverlay').classList.remove('show');
+}
+function handleFile(file){
+  if(!file){ return; }
+  const ext = file.name.split('.').pop().toLowerCase();
+  if(!['xlsx','xls','csv'].includes(ext)){
+    showAlert('Format file tidak didukung. Gunakan .xlsx, .xls, atau .csv', 'err');
+    return;
+  }
+  $('#fcName').textContent = file.name;
+  $('#fcMeta').textContent = (file.size/1024).toFixed(1) + ' KB · membaca...';
+  $('#fileChip').classList.add('show');
+
+  const reader = new FileReader();
+  reader.onload = e=>{
+    try{
+      const wb = XLSX.read(e.target.result, {type:'binary', cellDates:true, dateNF:'yyyy-mm-dd'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json(ws, {defval:'', raw:false});
+      if(!json.length){
+        showAlert('File kosong atau tidak ada baris data.', 'err');
+        $('#fcMeta').textContent = '0 baris';
+        $('#importConfirmBtn').disabled = true;
+        return;
+      }
+      const headers = Object.keys(json[0]);
+      importMapping = mapHeaders(headers);
+      const metaMap = mapMetaHeaders(headers);
+
+      importRows = json.map((row, i)=>{
+        const obj = {};
+        FIELDS.forEach(f=>{
+          const colIdx = importMapping[f.key];
+          if(colIdx === undefined){ obj[f.key] = ''; }
+          else{
+            let v = row[headers[colIdx]];
+            if(v instanceof Date) v = v.toISOString().slice(0,10);
+            obj[f.key] = v === null || v === undefined ? '' : String(v).trim();
+          }
+        });
+        if(!obj.nomor) obj.nomor = String(i+1);
+
+        const gk = groupKey(obj);
+        if(gk && gk !== NO_BUKTI_KEY){
+          if(!importMetaMap[gk]) importMetaMap[gk] = {};
+          GROUP_FIELDS.forEach(f=>{
+            const cIdx = metaMap[f.key];
+            if(cIdx === undefined) return;
+            let v = row[headers[cIdx]];
+            if(v instanceof Date){
+              if(f.type === 'datetime-local'){
+                const pad = n => String(n).padStart(2,'0');
+                v = `${v.getFullYear()}-${pad(v.getMonth()+1)}-${pad(v.getDate())}T${pad(v.getHours())}:${pad(v.getMinutes())}`;
+              }else{
+                v = v.toISOString().slice(0,10);
+              }
+            }
+            v = (v === null || v === undefined) ? '' : String(v).trim();
+            if(v && !importMetaMap[gk][f.key]) importMetaMap[gk][f.key] = v;
+          });
+        }
+        return obj;
+      });
+
+      Object.keys(importMetaMap).forEach(k=>{
+        const m = importMetaMap[k];
+        if(!m.tcode){
+          const d = deriveTcode(k);
+          if(d) m.tcode = d;
+        }
+      });
+
+      $('#fcMeta').textContent = (file.size/1024).toFixed(1) + ' KB · ' + importRows.length + ' baris siap diimport';
+      renderImportPreview(headers);
+      renderMappingStatus(metaMap);
+
+      const hasBTK  = importMapping.buktiTransaksiKirim !== undefined;
+      const hasSite = importMapping.site !== undefined;
+      const hasPart = importMapping.partNumber !== undefined;
+
+      if(!hasBTK){
+        showAlert('Kolom "Bukti Transaksi Kirim" tidak ditemukan. Semua baris masuk ke grup "(Tanpa Bukti Transaksi Kirim)".', 'warn');
+        $('#importConfirmBtn').disabled = false;
+      }else if(!hasSite && !hasPart){
+        showAlert('Kolom "Site" dan "Part Number" tidak ditemukan. Periksa nama kolom pada file Excel.', 'err');
+        $('#importConfirmBtn').disabled = true;
+      }else{
+        showAlert('✓ File berhasil dibaca. Periksa preview lalu klik "Import Sekarang".', 'info');
+        $('#importConfirmBtn').disabled = false;
+      }
+    }catch(err){
+      console.error(err);
+      showAlert('Gagal membaca file: ' + err.message, 'err');
+      $('#importConfirmBtn').disabled = true;
+    }
+  };
+  reader.readAsBinaryString(file);
+}
+function showAlert(msg, type){
+  const el = $('#importAlert');
+  el.className = 'alert show ' + (type || 'info');
+  el.textContent = msg;
+}
+function renderImportPreview(headers){
+  const previewKeys = ['nomor','buktiTransaksiKirim','nomorSuratJalanP3','sjlKpgSby','namaExpedisi','noResiExpedisi',
+                       'sjlSby','noTrukDriver',
+                       'site','partNumber','qty','statusServiceCall'];
+  const allIdx = { ...importMapping, ...mapMetaHeaders(headers) };
+  const cols = previewKeys.filter(k => allIdx[k] !== undefined);
+  const useCols = cols.length ? cols : FIELDS.slice(0,6).map(f=>f.key);
+
+  $('#previewCount').textContent = importRows.length + ' baris';
+
+  let html = '<table><thead><tr>';
+  html += useCols.map(k=>{
+    const f = FIELDS.find(x=>x.key===k) || GROUP_FIELDS.find(x=>x.key===k);
+    return `<th>${esc(f ? f.label : k)}</th>`;
+  }).join('');
+  html += '</tr></thead><tbody>';
+
+  importRows.slice(0, 8).forEach(r=>{
+    const gk = groupKey(r);
+    const meta = importMetaMap[gk] || {};
+    html += '<tr>' + useCols.map(k=>{
+      let v;
+      if(GROUP_FIELDS.some(gf=>gf.key===k)){
+        v = meta[k] ?? '';
+      }else{
+        v = r[k] ?? '';
+      }
+      return `<td>${esc(v === '' ? '-' : v)}</td>`;
+    }).join('') + '</tr>';
+  });
+  html += '</tbody></table>';
+
+  if(importRows.length > 8){
+    html += `<div style="padding:8px 14px;font-size:11px;color:#64748b;background:#f8fafc;border-top:1px solid #e2e8f0">
+      ... dan ${importRows.length - 8} baris lainnya</div>`;
+  }
+  $('#previewScroll').innerHTML = html;
+  $('#previewBox').classList.add('show');
+}
+function renderMappingStatus(metaMap){
+  const metaMapFinal = metaMap || mapMetaHeaders([]);
+  const listMain = FIELDS.map(f=>{
+    const ok = importMapping[f.key] !== undefined;
+    return `<span class="map-tag ${ok ? '' : 'miss'}">${ok ? '✓' : '○'} ${esc(f.label)}</span>`;
+  }).join('');
+  const listMeta = GROUP_FIELDS.map(f=>{
+    const ok = metaMapFinal[f.key] !== undefined;
+    return `<span class="map-tag ${ok ? 'meta' : 'miss'}">${ok ? '✓' : '○'} ${esc(f.label)}</span>`;
+  }).join('');
+  $('#mappingList').innerHTML = listMain + listMeta;
+  $('#mappingWrap').style.display = 'block';
+}
+function confirmImport(){
+  if(!importRows.length){ return; }
+  const mode = document.querySelector('input[name="importMode"]:checked').value;
+  const baseId = data.length ? Math.max(...data.map(d=>d.id)) : 0;
+  const newRecords = importRows.map((r, i)=>({ ...r, id: baseId + i + 1 }));
+
+  Object.keys(importMetaMap).forEach(k=>{
+    const m = importMetaMap[k];
+    if(!m.tcode){
+      const d = deriveTcode(k);
+      if(d) m.tcode = d;
+    }
+  });
+
+  if(mode === 'replace'){
+    if(!confirm(`Ganti SEMUA data existing (${data.length} baris) dengan ${newRecords.length} baris dari file?`)) return;
+    data = newRecords;
+    groupMeta = { ...importMetaMap };
+    saveMeta();
+    toast(`✓ Import selesai — ${newRecords.length} baris (mode: ganti semua)`);
+  }else{
+    data = data.concat(newRecords);
+    Object.keys(importMetaMap).forEach(k=>{
+      groupMeta[k] = { ...(groupMeta[k]||{}), ...importMetaMap[k] };
+    });
+    saveMeta();
+    toast(`✓ Import selesai — ${newRecords.length} baris ditambahkan`);
+  }
+  saveData();
+  renderTable();
+  closeImportModal();
+}
+
+/* =========================================================
+   INIT (UI + EVENTS)
+   ========================================================= */
+function init(){
+  $('#today').textContent = new Date().toLocaleDateString('id-ID',
+    { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+
+  loadData();
+  loadMeta();
+  buildMainHead();
+  buildForm();
+  buildMetaForm();
+  renderTable();
+
+  $('#searchInput').addEventListener('input', renderTable);
+  $('#siteFilter').addEventListener('change', renderTable);
+  $('#statusFilter').addEventListener('change', renderTable);
+
+  $('#addBtn').addEventListener('click', ()=> openModal(null));
+  $('#closeX').addEventListener('click', closeModal);
+  $('#cancelBtn').addEventListener('click', closeModal);
+  $('#saveBtn').addEventListener('click', saveRecord);
+  $('#deleteBtn').addEventListener('click', deleteRecord);
+  $('#overlay').addEventListener('click', e=>{ if(e.target.id === 'overlay') closeModal(); });
+
+  $('#metaCloseX').addEventListener('click', closeMetaModal);
+  $('#metaCancelBtn').addEventListener('click', closeMetaModal);
+  $('#metaSaveBtn').addEventListener('click', saveMetaRecord);
+  $('#metaOverlay').addEventListener('click', e=>{ if(e.target.id === 'metaOverlay') closeMetaModal(); });
+
+  $('#detailCloseX').addEventListener('click', closeDetail);
+  $('#detailOverlay').addEventListener('click', e=>{ if(e.target.id === 'detailOverlay') closeDetail(); });
+  $('#detailAddBtn').addEventListener('click', ()=>{
+    const presetKey = currentDetailKey === NO_BUKTI_KEY ? '' : currentDetailKey;
+    closeDetail();
+    openModal(null, { buktiTransaksiKirim: presetKey });
+  });
+  $('#detailExportBtn').addEventListener('click', exportGroupExcel);
+  $('#detailMetaBtn').addEventListener('click', ()=>{
+    const key = currentDetailKey;
+    closeDetail();
+    openMetaModal(key);
+  });
+
+  /* ---- Dropdown Export Excel (2 opsi) ---- */
+  $('#exportBtn').addEventListener('click', e=>{
+    e.stopPropagation();
+    $('#exportMenu').classList.toggle('show');
+  });
+  $('#exportMenu').querySelectorAll('button').forEach(b=>{
+    b.addEventListener('click', e=>{
+      e.stopPropagation();
+      $('#exportMenu').classList.remove('show');
+      if(b.dataset.mode === 'front') exportFrontViewExcel();
+      else exportExcel();
+    });
+  });
+  document.addEventListener('click', ()=>{
+    const m = $('#exportMenu');
+    if(m && m.classList.contains('show')) m.classList.remove('show');
+  });
+
+  $('#templateBtn').addEventListener('click', downloadTemplateExcel);
+
+  $('#importBtn').addEventListener('click', openImportModal);
+  $('#importCloseX').addEventListener('click', closeImportModal);
+  $('#importCancelBtn').addEventListener('click', closeImportModal);
+  $('#importConfirmBtn').addEventListener('click', confirmImport);
+  $('#importOverlay').addEventListener('click', e=>{ if(e.target.id === 'importOverlay') closeImportModal(); });
+
+  const dz = $('#dropZone');
+  const fi = $('#fileInput');
+  dz.addEventListener('click', ()=> fi.click());
+  dz.addEventListener('dragover', e=>{ e.preventDefault(); dz.classList.add('drag'); });
+  dz.addEventListener('dragleave', ()=> dz.classList.remove('drag'));
+  dz.addEventListener('drop', e=>{
+    e.preventDefault(); dz.classList.remove('drag');
+    const f = e.dataTransfer.files[0];
+    if(f) handleFile(f);
+  });
+  fi.addEventListener('change', e=>{
+    const f = e.target.files[0];
+    if(f) handleFile(f);
+  });
+  $('#fcRemove').addEventListener('click', ()=>{
+    importRows = [];
+    importMapping = {};
+    importMetaMap = {};
+    fi.value = '';
+    $('#fileChip').classList.remove('show');
+    $('#previewBox').classList.remove('show');
+    $('#mappingWrap').style.display = 'none';
+    $('#importAlert').classList.remove('show');
+    $('#importConfirmBtn').disabled = true;
+  });
+
+  document.addEventListener('keydown', e=>{
+    if(e.key === 'Escape'){
+      if(document.querySelector('.editable-cell.editing')) return;
+      if($('#importOverlay').classList.contains('show')) closeImportModal();
+      else if($('#metaOverlay').classList.contains('show')) closeMetaModal();
+      else if($('#detailOverlay').classList.contains('show')) closeDetail();
+      else closeModal();
+    }
+    if(e.key === 'Enter' && $('#overlay').classList.contains('show') && e.target.tagName !== 'TEXTAREA'){
+      e.preventDefault(); saveRecord();
+    }
+  });
+}
+
+/* =========================================================
+   ============  FIREBASE : AUTH + FIRESTORE  ==============
+   ========================================================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyCJXpd7hicPPiIMnNdTI5xPgVyBcNf5olo",
+  authDomain: "kontrol-pengiriman-sparepart.firebaseapp.com",
+  projectId: "kontrol-pengiriman-sparepart",
+  storageBucket: "kontrol-pengiriman-sparepart.firebasestorage.app",
+  messagingSenderId: "26757702130",
+  appId: "1:26757702130:web:24f586207585c75e19cb6b",
+  measurementId: "G-D7YWLLTX7Q"
+};
+
+const EMAIL_DOMAIN = '@kontrol-sparepart.local';
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+const DOC_REF = db.collection('kontrol').doc('main');
+
+let currentUser   = null;
+let fsReady       = false;
+let suppressPush  = false;
+let pushTimer     = null;
+let unsubSnap     = null;
+let appStarted    = false;
+
+function usernameToEmail(u){
+  const s = String(u || '').trim().toLowerCase();
+  if(!s) return '';
+  return s.includes('@') ? s : s + EMAIL_DOMAIN;
+}
+function emailToUsername(e){
+  return String(e || '').replace(EMAIL_DOMAIN, '');
+}
+
+const AUTH_ERRORS = {
+  'auth/invalid-email'              : 'Format username tidak valid.',
+  'auth/user-disabled'              : 'Akun ini dinonaktifkan. Hubungi admin.',
+  'auth/user-not-found'             : 'Username tidak ditemukan.',
+  'auth/wrong-password'             : 'Password salah.',
+  'auth/invalid-credential'         : 'Username atau password salah.',
+  'auth/invalid-login-credentials'  : 'Username atau password salah.',
+  'auth/too-many-requests'          : 'Terlalu banyak percobaan gagal. Coba lagi beberapa saat.',
+  'auth/network-request-failed'     : 'Koneksi internet bermasalah.',
+  'auth/operation-not-allowed'      : 'Metode login Email/Password belum diaktifkan di Firebase Console.'
+};
+function authMsg(err){
+  return AUTH_ERRORS[err && err.code] || (err && err.message) || 'Terjadi kesalahan.';
+}
+
+function bindLogin(){
+  $('#loginForm').addEventListener('submit', async e=>{
+    e.preventDefault();
+    const u    = $('#loginUser').value.trim();
+    const p    = $('#loginPass').value;
+    const msg  = $('#loginMsg');
+    const btn  = $('#loginBtn');
+
+    msg.className = 'login-msg';
+    msg.textContent = '';
+
+    if(!u || !p){
+      msg.className = 'login-msg err';
+      msg.textContent = 'Username dan password wajib diisi.';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = '⏳ Memproses…';
+
+    try{
+      await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+      await auth.signInWithEmailAndPassword(usernameToEmail(u), p);
+      msg.className = 'login-msg ok';
+      msg.textContent = '✓ Berhasil masuk, memuat data…';
+    }catch(err){
+      console.error(err);
+      msg.className = 'login-msg err';
+      msg.textContent = authMsg(err);
+      $('#loginPass').value = '';
+      $('#loginPass').focus();
+    }finally{
+      btn.disabled = false;
+      btn.textContent = '🔐 Masuk';
+    }
+  });
+
+  $('#logoutBtn').addEventListener('click', async ()=>{
+    if(!confirm('Keluar dari aplikasi?')) return;
+    try{ await auth.signOut(); }catch(e){ console.error(e); }
+  });
+}
+
+function initAuth(){
+  auth.onAuthStateChanged(async user=>{
+    $('#loadingScreen').classList.remove('show');
+
+    if(user){
+      currentUser = user;
+
+      const uname = emailToUsername(user.email || 'user');
+      $('#userName').textContent   = uname;
+      $('#userAvatar').textContent = (uname.charAt(0) || 'U').toUpperCase();
+      $('#userChip').classList.add('show');
+
+      $('#loginScreen').classList.remove('show');
+      $('#appWrap').style.display = '';
+
+      $('#loginPass').value = '';
+
+      await startApp();
+      startFirestoreSync();
+    }else{
+      currentUser = null;
+      stopFirestoreSync();
+
+      $('#appWrap').style.display = 'none';
+      $('#userChip').classList.remove('show');
+      $('#loginScreen').classList.add('show');
+      $('#loginMsg').textContent = '';
+      setTimeout(()=>{ const el = $('#loginUser'); if(el) el.focus(); }, 120);
+    }
+  });
+}
+
+async function startApp(){
+  if(appStarted) return;
+  appStarted = true;
+  init();
+}
+
+function startFirestoreSync(){
+  if(unsubSnap) return;
+  fsReady = false;
+
+  unsubSnap = DOC_REF.onSnapshot(snap=>{
+    if(snap.metadata.hasPendingWrites) return;
+
+    const d = snap.data();
+
+    suppressPush = true;
+
+    if(d && Array.isArray(d.data) && d.data.length){
+      data      = d.data;
+      groupMeta = (d.groupMeta && typeof d.groupMeta === 'object') ? d.groupMeta : {};
+      try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }catch(e){}
+      try{ localStorage.setItem(META_KEY, JSON.stringify(groupMeta)); }catch(e){}
+    }else{
+      suppressPush = false;
+      fsReady = true;
+      pushToFirestore();
+      return;
+    }
+
+    fsReady = false;
+    suppressPush = false;
+    fsReady = true;
+
+    if(!document.querySelector('.editable-cell.editing')){
+      renderTable();
+      if(currentDetailKey && $('#detailOverlay').classList.contains('show')) renderDetail();
+    }
+  }, err=>{
+    console.error('Firestore error:', err);
+    fsReady = false;
+    toast('⚠️ Gagal sinkron ke server (' + (err.code || 'error') + ')');
+  });
+}
+
+function stopFirestoreSync(){
+  if(unsubSnap){ unsubSnap(); unsubSnap = null; }
+  fsReady = false;
+  clearTimeout(pushTimer);
+}
+
+function pushToFirestore(){
+  if(!currentUser) return;
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(()=>{
+    DOC_REF.set({
+      data,
+      groupMeta,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedBy: currentUser.email || ''
+    }).catch(err=>{
+      console.error('Gagal simpan ke Firestore:', err);
+      toast('⚠️ Gagal menyimpan ke server');
+    });
+  }, 400);
+}
+
+/* =========================================================
+   BOOTSTRAP
+   ========================================================= */
+bindLogin();
+initAuth();
+</script>
 </body>
 </html>
